@@ -81,7 +81,6 @@ public class CustomSecurityConfig {
                             .toArray(String[]::new);
 
                     request.requestMatchers(permitAllMemberUri).permitAll()
-//                    .requestMatchers("/ws/**", "/topic/**", "/app/**").permitAll() // 웹소켓 경로 전체 허용
                     ;
 
                     // 에러 페이지 허용
@@ -102,17 +101,17 @@ public class CustomSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-//        configuration.addAllowedOrigin("*"); // React Native 앱 허용
+        configuration.addAllowedOrigin("*"); // React Native 앱 허용
 
-//        configuration.addAllowedOrigin("http://localhost:8081");
-//        configuration.addAllowedOrigin("http://10.0.2.2:8081");
+        configuration.addAllowedOrigin("http://localhost:8081");
+        configuration.addAllowedOrigin("http://10.0.2.2:8081");
 //        configuration.addAllowedOrigin("https://ff14.vercel.app/"); // 배포된 프론트
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT","PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowCredentials(true);
 
-        configuration.setAllowedHeaders(List.of("Access-Token","Authorization", "Content-Type","Refresh-Token"));
-        configuration.setExposedHeaders(List.of("Access-Token","Authorization","Refresh-Token"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type","Refresh-Token"));
+        configuration.setExposedHeaders(List.of("Authorization","Refresh-Token"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

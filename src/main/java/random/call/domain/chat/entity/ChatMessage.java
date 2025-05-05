@@ -1,11 +1,9 @@
 package random.call.domain.chat.entity;
 
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
+import random.call.domain.member.Member;
 import random.call.global.timeStamped.Timestamped;
 
 @Entity
@@ -14,12 +12,16 @@ import random.call.global.timeStamped.Timestamped;
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChatMessage extends Timestamped {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String sender;
-    private String content;
-    private String roomId;
+    private Long senderId;
 
+    @Column(nullable = false)
+    private Long roomId;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String content;
 }

@@ -6,25 +6,36 @@ import lombok.Getter;
 import random.call.domain.feed.Feed;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @AllArgsConstructor
 public class FeedResponse {
 
-    private Long id;             // Feed ID
-    private String content;      // 게시물 내용
-    private String writerName;   // 작성자 이름 또는 닉네임
-    private String writerProfilePic; // 작성자 프로필 사진 URL (선택 사항)
-    private LocalDateTime createdAt; // 생성 시간
-    private LocalDateTime updatedAt; // 업데이트 시간
+    private Long id;
+    private WriterDto writer;
+    private String content;
+    private List<String> imageUrls;
+    private Integer likeCount;
+    private Integer commentCount;
+    private LocalDateTime createdAt;
 
-    // Entity -> DTO 변환
     public FeedResponse(Feed feed) {
         this.id = feed.getId();
+        this.writer = new WriterDto(feed.getWriter().getId(), feed.getWriter().getNickname());
         this.content = feed.getContent();
-        this.writerName = feed.getWriter().getNickname(); // 예시로 writer의 이름을 가져옵니다.
-        this.writerProfilePic = feed.getWriter().getProfileImage(); // 예시로 프로필 사진을 가져옵니다.
+        this.imageUrls = feed.getImageUrls();
+        this.likeCount = feed.getLikeCount();
+        this.commentCount = feed.getCommentCount();
         this.createdAt = feed.getCreatedAt();
-        this.updatedAt = feed.getModifiedAt();
+    }
+
+    @Getter
+    @AllArgsConstructor
+    public static class WriterDto {
+        private Long id;
+        private String nickname;
     }
 }
+
+

@@ -1,26 +1,68 @@
 package random.call.domain.chat;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import random.call.domain.chat.dto.ChatMessageDto;
+import random.call.domain.chat.dto.ChatHistory;
 import random.call.domain.chat.entity.ChatMessage;
+import random.call.domain.chat.dto.ChatRoomHistory;
+import random.call.domain.chat.entity.ChatRoom;
+import random.call.domain.chat.repository.ChatMessageRepository;
+import random.call.domain.chat.repository.ChatRoomRepository;
+import random.call.global.security.userDetails.JwtUserDetails;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/chat")
+@RequestMapping("/api/v1/chat")
 @RequiredArgsConstructor
+@Slf4j
 public class ChatApiController {
 
     private final ChatMessageRepository chatMessageRepository;
+    private final ChatService chatService;
+    private final ChatRoomRepository chatRoomRepository;
+
+
+    @GetMapping("/{roomId}")
+    public ResponseEntity<List<ChatHistory>> getChatRoomMessagesHistory(@PathVariable("roomId") Long roomId){
+        ChatRoom chatRoom =chatRoomRepository.findById(roomId).orElseThrow(()->new EntityNotFoundException("not found chatRoom"));
+
+        List<ChatMessage> messages =chatMessageRepository.findByRoomIdOrderByCreatedAtAsc(roomId);
+        List<ChatHistory> messageDtos =messages.stream()
+                .map(this::convertChatMessageToDto)
+                .toList();
+        log.info("{} : 채팅방 내역조회========================",roomId);
+
+        return ResponseEntity.ok(messageDtos);
+
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<List<ChatRoomHistory>> getChatHistory(@AuthenticationPrincipal JwtUserDetails jwtUserDetails){
+
+        List<ChatRoomHistory> chatRoomHistories =chatService.getChatRoomHistory(jwtUserDetails.id());
+
+
+
+
+        return ResponseEntity.ok(chatRoomHistories);
+
+    }
+
+
 
     @GetMapping("/history/{roomId}")
     public ResponseEntity<List<ChatMessageDto>> getChatHistory(
-            @PathVariable String roomId,
+            @PathVariable Long roomId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime after) {
 
         List<ChatMessage> messages = after == null ?
@@ -35,9 +77,17 @@ public class ChatApiController {
     }
 
     private ChatMessageDto convertToDto(ChatMessage entity) {
-        // 구현 생략 (위와 동일)
+
 
         return null;
-        
+
+    }
+    private ChatHistory convertChatMessageToDto(ChatMessage entity) {
+       return ChatHistory.builder()
+                .senderId(entity.getSenderId())
+                .content(entity.getContent())
+                .roomId(entity.getRoomId())
+                .createdAt(entity.getCreatedAt().format(DateTimeFormatter.ISO_DATE_TIME))
+                .build();
     }
 }

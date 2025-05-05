@@ -29,16 +29,20 @@ public class Feed extends Timestamped {
     private List<String> imageUrls; // 이미지 URL 목록
 
     @Column(nullable = false)
-    private int likeCount = 0; // 좋아요 수
+    @Builder.Default
+    private Integer likeCount = 0; // 좋아요 수
 
     @Column(nullable = false)
-    private int commentCount = 0; // 댓글 수
+    @Builder.Default
+    private Integer commentCount = 0; // 댓글 수
 
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     private Visibility visibility = Visibility.PUBLIC; // 게시물 가시성 (PUBLIC, PRIVATE 등)
 
     @Column
-    private boolean isDeleted = false; // 삭제 여부
+    @Builder.Default
+    private Boolean isDeleted = false; // 삭제 여부
 
     // 좋아요 추가
     public void increaseLikeCount() {

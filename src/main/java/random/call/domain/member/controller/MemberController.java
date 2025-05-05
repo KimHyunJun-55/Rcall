@@ -3,6 +3,7 @@ package random.call.domain.member.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -63,13 +64,13 @@ public class MemberController {
     @PostMapping("/check-nickname")
     public ResponseEntity<Boolean> checkNickname(@RequestBody MemberRequest.CheckNickname checkNickname){
         boolean check = memberService.checkNickname(checkNickname.nickname());
-        return ResponseEntity.ok(!check);
+        return ResponseEntity.ok(check);
 
     }
     @PostMapping("/check-username")
     public ResponseEntity<Boolean> checkUsername(@RequestBody MemberRequest.CheckUsername checkNickname){
         boolean check = memberService.checkUsername(checkNickname.username());
-        return ResponseEntity.ok(!check);
+        return ResponseEntity.ok(check);
 
     }
 
@@ -81,6 +82,8 @@ public class MemberController {
         return ResponseEntity.ok(true);
 
     }
+
+
 
 
 

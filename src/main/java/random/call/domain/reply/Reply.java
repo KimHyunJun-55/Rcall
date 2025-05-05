@@ -27,7 +27,8 @@ public class Reply extends Timestamped {
     private String content;
 
     @Column(nullable = false)
-    private boolean isDeleted = false;
+    @Builder.Default
+    private Boolean isDeleted = false;
 
     public void updateContent(String content) {
         this.content = content;

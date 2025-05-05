@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -34,8 +35,8 @@ public class JwtUtil {
     private static final String BEARER_PREFIX ="Bearer ";
     public static final String ACCESS_KEY ="Authorization";
     public static final String REFRESH_KEY ="REFRESH-TOKEN";
-    private static final long ACCESS_TIME = Duration.ofMinutes(20).toMillis();
-//    private static final long ACCESS_TIME = Duration.ofSeconds(15).toMillis();
+    private static final long ACCESS_TIME = Duration.ofMinutes(30).toMillis();
+//    private static final long ACCESS_TIME = Duration.ofSeconds(20).toMillis();
     private static final long REFRESH_TIME = Duration.ofDays(7).toMillis();
 
 
@@ -58,7 +59,7 @@ public class JwtUtil {
     }
 
     public String resolveToken(HttpServletRequest request, String token) {
-        String tokenName = token.equals("ACCESS-TOKEN") ? ACCESS_KEY : REFRESH_KEY;
+        String tokenName = token.equals(ACCESS_KEY) ? ACCESS_KEY : REFRESH_KEY;
         String bearerToken = request.getHeader(tokenName);
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
             return bearerToken.substring(7);
@@ -76,6 +77,7 @@ public class JwtUtil {
         Object principal = authentication.getPrincipal();
 
         Long userId = getUserId(principal);
+        System.out.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"+userId);
         String nickname = getNickname(principal);
 
         if(type.equals("Access")) {
@@ -166,9 +168,31 @@ public class JwtUtil {
     public String getNicknameToToken(String accessToken){
         Claims claims = parseClaims(accessToken);
         return claims.get("nickname", String.class);
-
-
     }
+
+    public Long getMemberIdToToken(String accessToken) {
+        try {
+            Claims claims = parseClaims(accessToken);
+            // 1. Long으로 직접 추출 시도
+            Long id = claims.get("id", Long.class);
+
+            // 2. 실패 시 대체 로직 (Optional)
+            if (id == null) {
+                Object idObj = claims.get("id");
+                if (idObj instanceof Integer) {
+                    id = ((Integer) idObj).longValue();
+                } else if (idObj instanceof String) {
+                    id = Long.parseLong((String) idObj);
+                }
+            }
+            return id;
+        } catch (Exception e) {
+            log.error("ID 추출 실패: " + e.getMessage());
+            return null;
+        }
+    }
+
+
     public Claims parseClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)
@@ -206,24 +230,16 @@ public class JwtUtil {
 
     }
 
+
+
     //웹소켓 STOMP
-    public TokenDto handleRefreshToken(String refreshToken) {
-        Claims claims= parseClaims(refreshToken);
-        String memberEmail = claims.getSubject();
-        Long id = claims.get("id", Long.class);
-        String nickname = claims.get("nickname", String.class);
 
-
-        Authentication authentication =
-                new UsernamePasswordAuthenticationToken(new JwtUserDetails(id,memberEmail,nickname), null,  Collections.emptyList());
-
-
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(authentication);
-        SecurityContextHolder.setContext(context);
-
-        return createAllToken(authentication);
+    public String extractToken(StompHeaderAccessor accessor) {
+        String token = accessor.getFirstNativeHeader("Authorization");
+        return (token != null && token.startsWith("Bearer ")) ?
+                token.substring(7) : null;
     }
+
 
 
     public long getExpirationTime(String token) {

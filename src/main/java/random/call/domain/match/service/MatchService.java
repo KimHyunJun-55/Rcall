@@ -1,9 +1,11 @@
-package random.call.domain.match;
+package random.call.domain.match.service;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import random.call.domain.chat.ChatRoomRepository;
+import random.call.domain.chat.repository.ChatRoomRepository;
 import random.call.domain.chat.entity.ChatRoom;
+import random.call.domain.match.MatchType;
+import random.call.domain.match.WaitingUser;
 import random.call.domain.match.dto.ChatMatchResponse;
 import random.call.domain.match.dto.MatchRequest;
 import random.call.domain.match.dto.VoiceMatchResponse;
@@ -82,7 +84,7 @@ public class MatchService {
             String roomId = UUID.randomUUID().toString();
             ChatRoom room = ChatRoom.builder()
                     .roomId(roomId)
-                    .participants(List.of(memberId.toString(), bestMatchId.toString()))
+//                    .participants(List.of(memberId.toString(), bestMatchId.toString()))
                     .build();
             chatRoomRepository.save(room);
 

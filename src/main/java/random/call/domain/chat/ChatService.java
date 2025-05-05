@@ -1,45 +1,69 @@
 package random.call.domain.chat;
 
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import random.call.domain.chat.entity.ChatRoom;
+import org.springframework.transaction.annotation.Transactional;
+import random.call.domain.chat.dto.ChatRoomHistory;
+import random.call.domain.chat.entity.ChatMessage;
+import random.call.domain.chat.entity.ChatParticipant;
+import random.call.domain.chat.repository.ChatMessageRepository;
+import random.call.domain.chat.repository.ChatParticipantRepository;
+import random.call.domain.chat.repository.ChatRoomRepository;
+import random.call.domain.member.Member;
 
-import java.util.*;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class ChatService {
-    private Queue<String> waitingQueue = new LinkedList<>();
-    private Map<String, ChatRoom> activeRooms = new HashMap<>();
 
-    // 대기열에 사용자 추가
-    public void addUserToQueue(String userId) {
-        waitingQueue.offer(userId);
-        if (waitingQueue.size() >= 2) {
-            // 두 명의 사용자 매칭
-            String user1 = waitingQueue.poll();
-            String user2 = waitingQueue.poll();
-            createChatRoom(user1, user2);
-        }
-    }
 
-    private void createChatRoom(String user1, String user2) {
-        // 룸 아이디 생성: 예: "room_user1_user2" 또는 UUID
-        String roomId = "room_" + user1 + "_" + user2; // 또는 UUID.randomUUID().toString();
-        List<String> participants = Arrays.asList(user1, user2);
+    private final ChatMessageRepository chatMessageRepository;
+    private final ChatParticipantRepository chatParticipantRepository;
+    private final ChatRoomRepository chatRoomRepository;
 
-        // ChatRoom 객체 생성
-        ChatRoom chatRoom = ChatRoom
-                .builder()
-                .roomId(roomId)
-                .participants(participants)
-                .build();
 
-        // 룸을 활성화된 방 목록에 추가
-        activeRooms.put(roomId, chatRoom);
+    @Transactional(readOnly = true)
+    public List<ChatRoomHistory> getChatRoomHistory(Long memberId) {
+        List<Object[]> results = chatParticipantRepository.findRoomIdsAndMatchedNicknames(memberId);
 
-        // 사용자들에게 해당 roomId 구독
-        // 예: "/topic/room/{roomId}" 구독
-        System.out.println("매칭된 룸: " + roomId + " 참여자들: " + participants);
+        List<Long> roomIds = results.stream()
+                .map(r -> (Long) r[0])
+                .toList();
+
+        Map<Long, String> roomToNickname = results.stream()
+                .collect(Collectors.toMap(
+                        r -> (Long) r[0],
+                        r -> (String) r[1]
+                ));
+
+        List<ChatMessage> latestMessages = chatMessageRepository.findLatestMessagesByRoomIds(roomIds);
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+        Map<Long, ChatMessage> roomToLatestMessage = latestMessages.stream()
+                .collect(Collectors.toMap(
+                        ChatMessage::getRoomId,
+                        m -> m
+                ));
+
+        return roomIds.stream()
+                .map(roomId -> {
+                    ChatMessage msg = roomToLatestMessage.get(roomId);
+                    return ChatRoomHistory.builder()
+                            .RoomId(roomId)
+                            .memberNickname(roomToNickname.get(roomId))
+                            .lastMessage(msg != null ? msg.getContent() : "")
+                            .lastTime(msg != null ? msg.getCreatedAt().format(formatter) : "")
+                            .build();
+                })
+                .toList();
     }
 
 

@@ -43,10 +43,10 @@ public class MemberService {
     public MemberResponseDTO signUp(SignUpRequestDTO signUpRequestDTO) {
 
         if(checkUsername(signUpRequestDTO.getUsername())){
-            throw new EntityNotFoundException("정보가 없습니다.");
+            throw new EntityNotFoundException("이미 사용중인 아이디 입니다.");
         }
         if(checkNickname(signUpRequestDTO.getNickname())){
-            throw new EntityNotFoundException("정보가 없습니다.");
+            throw new EntityNotFoundException("이미 사용중인 닉네임입니다.");
         }
 
         Member member = Member
@@ -54,6 +54,10 @@ public class MemberService {
                 .username(signUpRequestDTO.getUsername())
                 .password(passwordEncoder.encode(signUpRequestDTO.getPassword()))
                 .nickname(signUpRequestDTO.getNickname())
+                .gender(signUpRequestDTO.getGender())
+                .mbti(signUpRequestDTO.getMbti())
+                .profileImage("null")
+                .interest(signUpRequestDTO.getInterests())
                 .build();
 
         memberRepository.save(member);

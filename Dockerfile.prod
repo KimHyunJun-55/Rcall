@@ -1,0 +1,5 @@
+FROM openjdk:17-jdk-slim
+
+COPY build/libs/*.jar /app/
+
+CMD ["java", "-Duser.timezone=Asia/Seoul", "-jar", "/app/call-0.0.1-release.jar"]

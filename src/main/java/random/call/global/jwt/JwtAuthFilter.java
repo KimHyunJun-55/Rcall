@@ -31,6 +31,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         if(access_token != null){
             if(jwtUtil.validateToken(access_token)){
+                System.out.println("access_token"+access_token);
                 jwtUtil.setAuthentication(access_token);
             }else if(refresh_token != null && jwtUtil.validateToken(refresh_token)){
                 jwtUtil.handleRefreshToken(refresh_token, response,request);

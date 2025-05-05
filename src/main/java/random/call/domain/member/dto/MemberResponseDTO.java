@@ -18,7 +18,6 @@ public class MemberResponseDTO {
 
     private Long id;
     private String nickname;
-    private String server;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDateTime createdAt;
 

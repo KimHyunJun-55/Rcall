@@ -5,10 +5,16 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import random.call.domain.chat.entity.ChatParticipant;
 import random.call.domain.member.type.Gender;
 import random.call.domain.member.type.MBTI;
 import random.call.global.timeStamped.Timestamped;
+
+import java.util.ArrayList;
 import java.util.List;
+
+
+
 @Entity
 @Builder
 @Getter
@@ -29,7 +35,7 @@ public class Member extends Timestamped {
     @Column(nullable = false,unique = true)
     private String nickname;
 
-    @Column
+    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
@@ -39,6 +45,10 @@ public class Member extends Timestamped {
     private String profileImage;
 
     private List<String> interest;
+
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ChatParticipant> chatRooms = new ArrayList<>();
 
     public void updateNickname(String nickname) {
         this.nickname=nickname;

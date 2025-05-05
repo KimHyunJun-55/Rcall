@@ -13,9 +13,14 @@ import java.util.Map;
 @Component
 public class CustomHandshakeHandler extends DefaultHandshakeHandler {
     @Override
-    protected Principal determineUser(ServerHttpRequest request, WebSocketHandler wsHandler, Map<String, Object> attributes) {
-        // CONNECT에서 설정한 Authentication을 Principal로 사용
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return auth != null ? auth : super.determineUser(request, wsHandler, attributes);
+    protected Principal determineUser(ServerHttpRequest request,
+                                      WebSocketHandler wsHandler,
+                                      Map<String, Object> attributes) {
+        Object memberId = attributes.get("id");
+        if (memberId == null) {
+            return null; // 연결은 되지만 사용자 정보는 없음
+        }
+        return () -> String.valueOf(memberId);
     }
+
 }

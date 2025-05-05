@@ -8,8 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 import random.call.domain.feed.Feed;
 import random.call.domain.feed.FeedRepository;
 
-import java.util.Optional;
-
 @Service
 @RequiredArgsConstructor
 public class LikeService {
@@ -24,8 +22,8 @@ public class LikeService {
         Feed feed = feedRepository.findById(feedId)
                 .orElseThrow(() -> new EntityNotFoundException("Feed not found"));
 
-        Like like = likeRepository.findByMemberIdAndFeedId(memberId, feedId)
-                .orElseGet(() -> Like.builder()
+        Likes like = likeRepository.findByMemberIdAndFeedId(memberId, feedId)
+                .orElseGet(() -> Likes.builder()
                         .memberId(memberId)
                         .feedId(feedId)
                         .isLike(false)

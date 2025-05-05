@@ -22,11 +22,5 @@ public class FeedRequest {
     private List<String> imageUrls;
 
     // FeedRequest -> Feed 변환
-    public Feed toEntity(Member writer) {
-        return Feed.builder()
-                .writer(writer)
-                .content(this.content)
-                .imageUrls(this.imageUrls)
-                .build();
-    }
+
 }
