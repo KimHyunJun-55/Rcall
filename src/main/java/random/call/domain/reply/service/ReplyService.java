@@ -2,8 +2,11 @@ package random.call.domain.reply.service;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import random.call.domain.feed.Feed;
 import random.call.domain.feed.FeedRepository;
 import random.call.domain.member.Member;
@@ -22,7 +25,8 @@ public class ReplyService {
     private final ReplyRepository replyRepository;
     private final FeedRepository feedRepository;
 
-    public void createReply(Member member, Long feedId, ReplyRequest request) {
+    @Transactional
+    public ReplyResponse createReply(Member member, Long feedId, ReplyRequest request) {
         Feed feed = feedRepository.findById(feedId)
                 .orElseThrow(() -> new EntityNotFoundException("Feed not found"));
 
@@ -35,8 +39,11 @@ public class ReplyService {
         replyRepository.save(reply);
         feed.addComment(); // 댓글 수 증가
         feedRepository.save(feed);
+
+        return new ReplyResponse(reply);
     }
 
+    @Transactional
     public void updateReply(Member member, Long replyId, ReplyRequest request) {
         Reply reply = replyRepository.findById(replyId)
                 .orElseThrow(() -> new EntityNotFoundException("Reply not found"));
@@ -48,6 +55,7 @@ public class ReplyService {
         reply.updateContent(request.getContent());
     }
 
+    @Transactional
     public void deleteReply(Member member, Long replyId) {
         Reply reply = replyRepository.findById(replyId)
                 .orElseThrow(() -> new EntityNotFoundException("Reply not found"));
@@ -62,10 +70,10 @@ public class ReplyService {
         feedRepository.save(feed);
     }
 
-    public List<ReplyResponse> getReplies(Long feedId) {
-        return replyRepository.findByFeedIdAndIsDeletedFalseOrderByCreatedAtAsc(feedId)
-                .stream()
-                .map(ReplyResponse::new)
-                .collect(Collectors.toList());
+    @Transactional(readOnly = true)
+    public Page<ReplyResponse> getReplies(Long feedId, Pageable pageable) {
+        Page<Reply> page = replyRepository.findByFeedIdAndIsDeletedFalseOrderByCreatedAtDesc(feedId, pageable);
+        return page.map(ReplyResponse::new); // 핵심
     }
+
 }

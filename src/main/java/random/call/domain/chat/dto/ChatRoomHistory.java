@@ -10,7 +10,11 @@ import random.call.domain.member.Member;
 public class ChatRoomHistory {
 
     private Long RoomId;
+    private Long memberId;
     private String memberNickname;
     private String lastMessage;
     private String lastTime;
+
+    private int unreadCount;
+
 }

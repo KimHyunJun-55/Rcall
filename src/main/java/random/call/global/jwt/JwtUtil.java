@@ -77,7 +77,7 @@ public class JwtUtil {
         Object principal = authentication.getPrincipal();
 
         Long userId = getUserId(principal);
-        System.out.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"+userId);
+//        System.out.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"+userId);
         String nickname = getNickname(principal);
 
         if(type.equals("Access")) {

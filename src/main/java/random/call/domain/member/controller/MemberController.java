@@ -6,13 +6,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import random.call.domain.member.dto.MemberRequest;
-import random.call.domain.member.dto.MemberResponseDTO;
-import random.call.domain.member.dto.SignInRequestDTO;
-import random.call.domain.member.dto.SignUpRequestDTO;
+import random.call.domain.member.dto.*;
 import random.call.domain.member.service.MemberService;
 import random.call.global.security.userDetails.CustomUserDetails;
 import random.call.global.security.userDetails.JwtUserDetails;
@@ -27,9 +25,23 @@ public class MemberController {
 
     //멤버단일조회
     @GetMapping("")
-    public ResponseEntity<MemberResponseDTO> readOneMember(@AuthenticationPrincipal JwtUserDetails userDetails){
+    public ResponseEntity<MemberResponseDTO> readOneMember(@AuthenticationPrincipal JwtUserDetails jwtUserDetails){
+        Long memberId = jwtUserDetails.id();
 
-        MemberResponseDTO memberResponseDTO = memberService.getMember(userDetails);
+        MemberResponseDTO memberResponseDTO = memberService.getMember(memberId);
+
+        return ResponseEntity.ok(memberResponseDTO);
+    }
+
+    //해당유저의 프로필 조회
+    @GetMapping("/{memberId}")
+    public ResponseEntity<MemberProfileResponseDTO> getProfileById(
+            @PathVariable("memberId") Long targetMemberId,
+            @AuthenticationPrincipal JwtUserDetails jwtUserDetails){
+
+        Long memberId = jwtUserDetails.id();
+
+        MemberProfileResponseDTO memberResponseDTO = memberService.getProfileById(memberId,targetMemberId);
 
         return ResponseEntity.ok(memberResponseDTO);
     }
@@ -74,13 +86,36 @@ public class MemberController {
 
     }
 
-    @PutMapping("/nickname")
-    public ResponseEntity<?> updateNickname(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody MemberRequest.CheckNickname checkNickname){
+    //프로필수정
+    @PutMapping("")
+    public ResponseEntity<?> updateMember(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody MemberRequest.MemberInfo memberInfo){
 
-        memberService.updateNickname(userDetails,checkNickname);
+        memberService.updateMember(userDetails,memberInfo);
 
         return ResponseEntity.ok(true);
 
+    }
+    @PutMapping("/interests")
+    public ResponseEntity<?> updateInterests(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody MemberRequest.MemberInterests interests){
+
+        memberService.updateInterests(userDetails,interests);
+
+        return ResponseEntity.ok(true);
+
+    }
+    @PutMapping("/questions")
+    public ResponseEntity<?> updateQuestions(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody MemberRequest.QuestionAnswerRequests questionAnswerRequests){
+
+        memberService.updateQuestions(userDetails,questionAnswerRequests);
+
+        return ResponseEntity.ok(true);
+
+    }
+    @GetMapping("/token")
+    public ResponseEntity<String> validToken() {
+        // 토큰이 유효하다면 200 OK 반환
+        log.info("Token is valid");
+        return new ResponseEntity<>("Token is valid", HttpStatus.OK);
     }
 
 

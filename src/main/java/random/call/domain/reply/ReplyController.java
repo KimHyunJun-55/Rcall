@@ -2,6 +2,9 @@ package random.call.domain.reply;
 
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -21,18 +24,24 @@ public class ReplyController {
 
     // 댓글 등록
     @PostMapping
-    public ResponseEntity<Boolean> createReply(@AuthenticationPrincipal CustomUserDetails userDetails,
+    public ResponseEntity<ReplyResponse> createReply(@AuthenticationPrincipal CustomUserDetails userDetails,
                                                @PathVariable Long feedId,
                                                @RequestBody ReplyRequest request) {
-        replyService.createReply(userDetails.member(), feedId, request);
-        return ResponseEntity.ok(true);
+        ReplyResponse reply =replyService.createReply(userDetails.member(), feedId, request);
+        return ResponseEntity.ok(reply);
     }
 
     // 댓글 목록 조회
     @GetMapping
-    public ResponseEntity<List<ReplyResponse>> getReplies(@PathVariable Long feedId) {
-        return ResponseEntity.ok(replyService.getReplies(feedId));
+    public ResponseEntity<Page<ReplyResponse>> getReplies(
+            @PathVariable Long feedId,
+            @PageableDefault(size = 10, sort = "createdAt") Pageable pageable
+    ) {
+        Page<ReplyResponse> responses = replyService.getReplies(feedId,pageable);
+
+        return ResponseEntity.ok(responses);
     }
+
 
     // 댓글 수정
     @PutMapping("/{replyId}")

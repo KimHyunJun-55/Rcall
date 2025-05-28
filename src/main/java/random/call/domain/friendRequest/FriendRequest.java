@@ -25,6 +25,16 @@ public class FriendRequest extends Timestamped {
     public void accept() {
         this.status = FriendRequestStatus.ACCEPTED;
     }
+    public void pending() {
+        this.status = FriendRequestStatus.PENDING;
+    }
+
+    public void cancel() {
+        if (this.status != FriendRequestStatus.PENDING) {
+            throw new IllegalStateException("처리된 요청은 취소할 수 없습니다.");
+        }
+        this.status = FriendRequestStatus.CANCELLED;
+    }
 
     public void reject() {
         this.status = FriendRequestStatus.REJECTED;

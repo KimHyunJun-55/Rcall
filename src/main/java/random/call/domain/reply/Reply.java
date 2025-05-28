@@ -23,7 +23,7 @@ public class Reply extends Timestamped {
     @ManyToOne(fetch = FetchType.LAZY)
     private Member writer;
 
-    @Column(nullable = false)
+    @Column(nullable = false,length = 1200)
     private String content;
 
     @Column(nullable = false)

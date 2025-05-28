@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'random'
-version = '0.0.1-release'
+version = '0.0.9-release'
 
 java {
 	toolchain {
@@ -32,8 +32,8 @@ dependencies {
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
 
 	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
@@ -48,6 +48,12 @@ dependencies {
 	//agora
 
 	implementation 'commons-codec:commons-codec:1.15'
+
+	//s3
+	implementation 'io.awspring.cloud:spring-cloud-aws-starter:3.1.1'
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	implementation 'com.amazonaws:aws-java-sdk-s3:1.12.767'
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 
 
 

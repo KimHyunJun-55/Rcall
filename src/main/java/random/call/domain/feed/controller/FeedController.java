@@ -9,11 +9,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import random.call.domain.feed.dto.FeedBaseResponse;
 import random.call.domain.feed.dto.FeedRequest;
+import random.call.domain.feed.dto.FeedRequestByMemberIdDTO;
 import random.call.domain.feed.dto.FeedResponse;
 import random.call.domain.feed.service.FeedService;
 import random.call.global.security.userDetails.CustomUserDetails;
 import org.springframework.data.domain.Pageable;
+import random.call.global.security.userDetails.JwtUserDetails;
 
 
 @RestController
@@ -23,33 +26,61 @@ public class FeedController {
 
     private final FeedService feedService;
 
-
-    @GetMapping("/feedId")
-    public ResponseEntity<FeedResponse> getFeed(@PathVariable("feedId")Long feedId){
-
-        FeedResponse response = feedService.getFeed(feedId);
-
-        return ResponseEntity.ok(response);
-
-    }
-
+    //전체 피드 조회
     @GetMapping("")
-    public ResponseEntity<Page<FeedResponse>> getFeeds(Pageable pageable) {
-        Page<FeedResponse> response = feedService.getFeeds(pageable);
+    public ResponseEntity<Page<FeedResponse>> getFeeds(@AuthenticationPrincipal JwtUserDetails jwtUserDetails, Pageable pageable) {
+        Page<FeedResponse> response = feedService.getFeeds(jwtUserDetails.id(),pageable);
+        return ResponseEntity.ok(response);
+    }
+    @GetMapping("/before/{feedId}")
+    public ResponseEntity<Page<FeedResponse>> getFeedByFeedIdBefore(@PathVariable("feedId")Long feedId,@AuthenticationPrincipal JwtUserDetails jwtUserDetails, Pageable pageable) {
+        System.out.println("비포요청");
+        Page<FeedResponse> response = feedService.getFeedByFeedIdBefore(jwtUserDetails.id(),feedId,pageable);
+        return ResponseEntity.ok(response);
+    }
+    @GetMapping("/after/{feedId}")
+    public ResponseEntity<Page<FeedResponse>> getFeedByFeedIdAfter(@PathVariable("feedId")Long feedId,@AuthenticationPrincipal JwtUserDetails jwtUserDetails, Pageable pageable) {
+        System.out.println("에프터 요청");
+        Page<FeedResponse> response = feedService.getFeedByFeedIdAfter(jwtUserDetails.id(),feedId,pageable);
+        return ResponseEntity.ok(response);
+    }
+    //피드 단일조회 FEED_ID
+    @GetMapping("/{feedId}")
+    public ResponseEntity<FeedResponse> getFeed(@PathVariable("feedId")Long feedId, @AuthenticationPrincipal JwtUserDetails jwtUserDetails) {
+        FeedResponse response = feedService.getFeed(jwtUserDetails.id(),feedId);
         return ResponseEntity.ok(response);
     }
 
+    //해당유저의 피드들
+    @GetMapping("/member/{memberId}")
+    public ResponseEntity<Page<FeedResponse>> getFeedsByMemberID(
+            @PathVariable("memberId")Long memberId,
+            @AuthenticationPrincipal JwtUserDetails jwtUserDetails,
+            Pageable pageable) {
+        Page<FeedResponse> response = feedService.getFeedsByMemberId(memberId,jwtUserDetails.id(),pageable);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("simple/{memberId}")
+    public ResponseEntity<Page<FeedRequestByMemberIdDTO>> getSimpleFeedsByMemberID(
+            @PathVariable("memberId")Long memberId,
+            @AuthenticationPrincipal JwtUserDetails jwtUserDetails,
+            Pageable pageable) {
+        Page<FeedRequestByMemberIdDTO> response = feedService.getSimpleFeedsByMemberId(memberId,jwtUserDetails.id(),pageable);
+        return ResponseEntity.ok(response);
+    }
+    //피드작성
     @PostMapping("")
-    public ResponseEntity<Boolean> crateFeed(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody  @Valid FeedRequest request){
+    public ResponseEntity<Boolean> crateFeed(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody FeedRequest request){
 
         feedService.createFeed(userDetails.member(),request);
         return ResponseEntity.ok(true);
     }
+    //피드수정
+    @PutMapping("/{feedId}")
+    public ResponseEntity<Boolean> updateFeed(@PathVariable("feedId")Long feedId,@AuthenticationPrincipal JwtUserDetails jwtUserDetails, @RequestBody FeedRequest request){
 
-    @PutMapping("/feedId")
-    public ResponseEntity<Boolean> updateFeed(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody FeedRequest request){
-
-        feedService.updateFeed(userDetails.member(),1L,request);
+        feedService.updateFeed(jwtUserDetails.id(),feedId,request);
         return ResponseEntity.ok(true);
     }
 }

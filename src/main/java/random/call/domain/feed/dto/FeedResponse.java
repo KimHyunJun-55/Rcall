@@ -2,32 +2,32 @@ package random.call.domain.feed.dto;
 
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
 import random.call.domain.feed.Feed;
+import random.call.domain.feed.Location;
 
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Getter
-@AllArgsConstructor
-public class FeedResponse {
+public class FeedResponse extends FeedBaseResponse {
 
-    private Long id;
-    private WriterDto writer;
-    private String content;
-    private List<String> imageUrls;
-    private Integer likeCount;
-    private Integer commentCount;
-    private LocalDateTime createdAt;
+    private final WriterDto writer;
+    private final Boolean isLiked;
+    private final Integer commentCount;
+    private final Integer likeCount;
+    private final Location location;
 
-    public FeedResponse(Feed feed) {
-        this.id = feed.getId();
-        this.writer = new WriterDto(feed.getWriter().getId(), feed.getWriter().getNickname());
-        this.content = feed.getContent();
-        this.imageUrls = feed.getImageUrls();
+    public FeedResponse(Feed feed, Boolean isLiked) {
+        super(feed);
+        this.writer = new WriterDto(
+                feed.getWriter().getId(),
+                feed.getWriter().getNickname(),
+                feed.getWriter().getProfileImage()
+        );
+        this.isLiked = isLiked;
         this.likeCount = feed.getLikeCount();
         this.commentCount = feed.getCommentCount();
-        this.createdAt = feed.getCreatedAt();
+        this.location = feed.getLocation();
     }
 
     @Getter
@@ -35,6 +35,7 @@ public class FeedResponse {
     public static class WriterDto {
         private Long id;
         private String nickname;
+        private String profileImage;
     }
 }
 

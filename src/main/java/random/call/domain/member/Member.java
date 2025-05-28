@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import random.call.domain.chat.entity.ChatParticipant;
+import random.call.domain.member.dto.MemberRequest;
 import random.call.domain.member.type.Gender;
 import random.call.domain.member.type.MBTI;
 import random.call.global.timeStamped.Timestamped;
@@ -35,6 +36,9 @@ public class Member extends Timestamped {
     @Column(nullable = false,unique = true)
     private String nickname;
 
+    @Column(nullable = true)
+    private String statusMessage;
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private Gender gender;
@@ -44,13 +48,31 @@ public class Member extends Timestamped {
 
     private String profileImage;
 
+    private String location;
+
+    @ElementCollection
     private List<String> interest;
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<ChatParticipant> chatRooms = new ArrayList<>();
 
+
+
     public void updateNickname(String nickname) {
         this.nickname=nickname;
+    }
+
+    public void updateMember(MemberRequest.MemberInfo memberInfo) {
+        this.statusMessage = memberInfo.statusMessage();
+        this.nickname = memberInfo.nickname();
+        this.profileImage =memberInfo.profileImage();
+    }
+
+    public void updateInterests(MemberRequest.MemberInterests interests) {
+        this.interest.clear();
+        this.interest =interests.interests();
+    }
+    public void updateQuestionAnswers(List<QuestionAnswer> newQuestionAnswers) {
     }
 }

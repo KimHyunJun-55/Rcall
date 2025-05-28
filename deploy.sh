@@ -21,13 +21,13 @@ echo "Deployment to Docker registry complete!"
 echo "=======step[4] :Deploying to EC2..."
 
 ssh -i "$PEM_PATH" "$EC2_USER@$EC2_HOST" << EOF
-  echo "Stopping Docker containers on EC2..."
+  echo "==========step[5]  :Stopping Docker containers on EC2..."
   docker compose down
 
-  echo "Removing old Docker image..."
+  echo "===========step[6]  :Removing old Docker image..."
   docker rmi mical150/rcall:latest
 
-  echo "Starting Docker containers..."
+  echo "===========step[7]  :Starting Docker containers..."
   docker compose up -d
 
   echo "Deployment on EC2 complete!"

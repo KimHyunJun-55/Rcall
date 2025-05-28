@@ -10,7 +10,7 @@ import random.call.domain.match.dto.ChatMatchResponse;
 import random.call.domain.match.dto.MatchRequest;
 import random.call.domain.match.dto.VoiceMatchResponse;
 import random.call.domain.member.Member;
-import random.call.domain.member.MemberRepository;
+import random.call.domain.member.repository.MemberRepository;
 import random.call.domain.sessions.Session;
 import random.call.domain.sessions.SessionService;
 

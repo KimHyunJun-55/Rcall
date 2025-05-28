@@ -8,13 +8,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 
-@RequestMapping("/api/auth-token")
+@RequestMapping("/api/token")
 @RestController
 @Slf4j
 public class AuthController {
 
     // 토큰 유효성 검사 API
-    @GetMapping("")
+    @GetMapping("/valid")
     public ResponseEntity<String> validToken() {
         // 토큰이 유효하다면 200 OK 반환
         log.info("Token is valid");

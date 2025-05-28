@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import random.call.domain.feed.Feed;
 import random.call.domain.feed.FeedRepository;
+import random.call.domain.like.dto.LikeToggleResponse;
 
 @Service
 @RequiredArgsConstructor
@@ -17,7 +18,7 @@ public class LikeService {
 
 
     @Transactional
-    public boolean likeToggle(Long memberId, Long feedId) {
+    public LikeToggleResponse likeToggle(Long memberId, Long feedId) {
 
         Feed feed = feedRepository.findById(feedId)
                 .orElseThrow(() -> new EntityNotFoundException("Feed not found"));
@@ -41,6 +42,9 @@ public class LikeService {
         likeRepository.save(like);
         feedRepository.save(feed);
 
-        return like.getIsLike();
+        return LikeToggleResponse.builder()
+                .likeCount(feed.getLikeCount())
+                .isLiked(like.getIsLike())
+                .build();
     }
 }

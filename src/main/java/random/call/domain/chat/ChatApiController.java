@@ -14,6 +14,7 @@ import random.call.domain.chat.dto.ChatRoomHistory;
 import random.call.domain.chat.entity.ChatRoom;
 import random.call.domain.chat.repository.ChatMessageRepository;
 import random.call.domain.chat.repository.ChatRoomRepository;
+import random.call.domain.match.service.ChatMatchService;
 import random.call.global.security.userDetails.JwtUserDetails;
 
 import java.time.LocalDateTime;
@@ -28,19 +29,25 @@ import java.util.stream.Collectors;
 public class ChatApiController {
 
     private final ChatMessageRepository chatMessageRepository;
-    private final ChatService chatService;
     private final ChatRoomRepository chatRoomRepository;
+    private final ChatService chatService;
+    private final ChatMatchService chatMatchService;
+
+    @GetMapping("/count")
+    public ResponseEntity<Integer> matchCount(){
+        return ResponseEntity.ok(chatMatchService.getCount());
+    }
 
 
     @GetMapping("/{roomId}")
     public ResponseEntity<List<ChatHistory>> getChatRoomMessagesHistory(@PathVariable("roomId") Long roomId){
+        log.info("{} : 채팅방 내역조회========================",roomId);
         ChatRoom chatRoom =chatRoomRepository.findById(roomId).orElseThrow(()->new EntityNotFoundException("not found chatRoom"));
 
         List<ChatMessage> messages =chatMessageRepository.findByRoomIdOrderByCreatedAtAsc(roomId);
         List<ChatHistory> messageDtos =messages.stream()
                 .map(this::convertChatMessageToDto)
                 .toList();
-        log.info("{} : 채팅방 내역조회========================",roomId);
 
         return ResponseEntity.ok(messageDtos);
 
@@ -50,9 +57,6 @@ public class ChatApiController {
     public ResponseEntity<List<ChatRoomHistory>> getChatHistory(@AuthenticationPrincipal JwtUserDetails jwtUserDetails){
 
         List<ChatRoomHistory> chatRoomHistories =chatService.getChatRoomHistory(jwtUserDetails.id());
-
-
-
 
         return ResponseEntity.ok(chatRoomHistories);
 
@@ -76,14 +80,22 @@ public class ChatApiController {
         return ResponseEntity.ok(dtos);
     }
 
+    @PostMapping("/cancel")
+    public ResponseEntity<Void> cancelMatching(@AuthenticationPrincipal JwtUserDetails jwtUserDetails) {
+        chatMatchService.removeFromMatchingPool(jwtUserDetails.id());
+        return ResponseEntity.ok().build();
+    }
+
     private ChatMessageDto convertToDto(ChatMessage entity) {
 
 
         return null;
 
     }
+
     private ChatHistory convertChatMessageToDto(ChatMessage entity) {
        return ChatHistory.builder()
+                .id(entity.getId())
                 .senderId(entity.getSenderId())
                 .content(entity.getContent())
                 .roomId(entity.getRoomId())

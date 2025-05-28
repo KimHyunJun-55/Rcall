@@ -4,10 +4,8 @@ package random.call.domain.like;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import random.call.domain.like.dto.LikeToggleResponse;
 import random.call.global.security.userDetails.CustomUserDetails;
 import random.call.global.security.userDetails.JwtUserDetails;
 
@@ -18,11 +16,12 @@ public class LikeController {
 
     private final LikeService likeService;
 
-    @GetMapping("/feedId")
-    public ResponseEntity<Boolean> likeToggle(@AuthenticationPrincipal JwtUserDetails userDetails, @PathVariable("feedId") Long feedId){
-
-        boolean like = likeService.likeToggle(userDetails.id(),feedId);
+    @PostMapping("/{feedId}")
+    public ResponseEntity<LikeToggleResponse> likeToggle(
+            @AuthenticationPrincipal JwtUserDetails userDetails,
+            @PathVariable("feedId") Long feedId
+    ) {
+        LikeToggleResponse like = likeService.likeToggle(userDetails.id(), feedId);
         return ResponseEntity.ok(like);
-
     }
 }
