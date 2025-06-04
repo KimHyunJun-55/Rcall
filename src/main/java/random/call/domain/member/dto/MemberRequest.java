@@ -12,6 +12,18 @@ public class MemberRequest {
     ){
 
     }
+    public record Message(
+            @NotBlank
+            String message
+    ){
+
+    }
+    public record ProfileImage(
+            @NotBlank
+            String imageUrl
+    ){
+
+    }
     public record CheckUsername(
             @NotBlank
             String username

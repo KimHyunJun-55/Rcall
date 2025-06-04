@@ -1,169 +1,293 @@
 package random.call.domain.match.service;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import random.call.domain.call.CallParticipant;
+import random.call.domain.call.CallParticipantRepository;
+import random.call.domain.call.CallRoom;
+import random.call.domain.call.CallRoomRepository;
+import random.call.domain.chat.entity.ChatParticipant;
+import random.call.domain.chat.repository.ChatParticipantRepository;
 import random.call.domain.chat.repository.ChatRoomRepository;
 import random.call.domain.chat.entity.ChatRoom;
+
 import random.call.domain.match.MatchType;
-import random.call.domain.match.WaitingUser;
-import random.call.domain.match.dto.ChatMatchResponse;
-import random.call.domain.match.dto.MatchRequest;
-import random.call.domain.match.dto.VoiceMatchResponse;
 import random.call.domain.member.Member;
+import random.call.domain.member.dto.MemberResponseDTO;
 import random.call.domain.member.repository.MemberRepository;
-import random.call.domain.sessions.Session;
-import random.call.domain.sessions.SessionService;
 
+
+import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
+import java.util.concurrent.*;
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MatchService {
-
-    private final SessionService sessionService;
     private final MemberRepository memberRepository;
     private final ChatRoomRepository chatRoomRepository;
+    private final SimpMessagingTemplate messagingTemplate;
+    private final ChatParticipantRepository chatParticipantRepository;
+    private final CallRoomRepository callRoomRepository;
+    private final CallParticipantRepository callParticipantRepository;
 
-    // 카테고리별로 Talker 대기 큐
-    private final Map<String, Queue<Long>> talkerQueues = new ConcurrentHashMap<>();
+    // 관심사별 대기열 (채팅/통화 구분)
+    private final Map<String, Set<Long>> chatInterestToUsersMap = new ConcurrentHashMap<>();
+    private final Map<String, Set<Long>> callInterestToUsersMap = new ConcurrentHashMap<>();
+    private final Map<Long, Set<String>> userToInterestsMap = new ConcurrentHashMap<>();
+    private final Map<Long, MatchType> userMatchTypeMap = new ConcurrentHashMap<>();
 
-    // 카테고리별로 Listener 대기 큐
-    private final Map<String, Queue<Long>> listenerQueues = new ConcurrentHashMap<>();
+    // 매칭 스레드 풀
+    private final ScheduledExecutorService matchingScheduler = Executors.newScheduledThreadPool(4);
 
-    // ALL 카테고리 Listener 전용 큐
-    private final Queue<Long> allListenerQueue = new ConcurrentLinkedQueue<>();
 
-    // 채팅 대기 중인 우선순위 큐
-    private final Map<String, PriorityQueue<WaitingUser>> chatWaitingQueue = new ConcurrentHashMap<>();
 
-    public ChatMatchResponse chatMatch(Long memberId, MatchType matchType) {
+    @Transactional
+    public void processMatching(Long memberId, MatchType matchType) throws InterruptedException {
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new EntityNotFoundException("해당 유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("Member not found"));
 
-        List<String> myInterests = member.getInterest(); // 예: ["game", "music", "travel"]
-        Long bestMatchId = null;
-        int maxScore = 0;
+        if (userToInterestsMap.containsKey(memberId)) {
+            throw new IllegalStateException("User is already in matching queue");
+        }
 
-        // 매칭을 위한 점수 계산 후 우선순위 큐에서 가장 높은 점수의 유저를 찾음
-        for (Map.Entry<String, PriorityQueue<WaitingUser>> entry : chatWaitingQueue.entrySet()) {
-            String interest = entry.getKey();
-            PriorityQueue<WaitingUser> queue = entry.getValue();
+        // 사용자 관심사 및 매칭 타입 저장
+        Set<String> interests = new HashSet<>(member.getInterest());
+        userToInterestsMap.put(memberId, interests);
+        userMatchTypeMap.put(memberId, matchType);
 
-            for (WaitingUser waitingUser : queue) {
-                if (waitingUser.getUserId().equals(memberId)) continue;
+        // 관심사 매핑 업데이트 (매칭 타입별로 분리)
+        Map<String, Set<Long>> targetMap = matchType == MatchType.CHAT ?
+                chatInterestToUsersMap : callInterestToUsersMap;
 
-                Member waitingMember = memberRepository.findById(waitingUser.getUserId())
-                        .orElse(null);
-                if (waitingMember == null) continue;
+        for (String interest : interests) {
+            targetMap.computeIfAbsent(interest, k -> ConcurrentHashMap.newKeySet())
+                    .add(memberId);
+        }
 
-                List<String> waitingInterests = waitingMember.getInterest();
-                int score = calculateMatchScore(myInterests, waitingInterests);
 
-                // 매칭 점수 업데이트
-//                if (score > maxScore) {
-//                    maxScore = score;
-//                    bestMatchId = waitingUser.getUserId();
-//                }
-//            if (maxScore > 3) break;  // 점수가 3점 이상이면 바로 매칭
-                if (score >= 3) {
-                    bestMatchId = waitingUser.getUserId();
-                    break; // 바로 매칭 종료
+        broadcastMatchingCount(matchType);
+
+        // 즉시 매칭 시도
+        Optional<MatchResult> immediateMatch = tryImmediateMatch(member, interests, matchType);
+        if (immediateMatch.isPresent()) {
+            MatchResult result = immediateMatch.get();
+            Thread.sleep(3_000); // UX를 위한 지연
+
+            sendMatchingSuccessMessage(member, result.matchedMember(),
+                    result.roomId(), matchType);
+            return;
+        }
+
+
+
+        // 매칭 실패 시 일정 시간 후 자동 취소
+        matchingScheduler.schedule(() -> removeFromMatchingPool(memberId), 600, TimeUnit.SECONDS);
+    }
+
+
+    private Optional<MatchResult> tryImmediateMatch(Member member,
+                                                    Set<String> interests, MatchType matchType) {
+
+        Long memberId = member.getId();
+        Map<Long, Integer> candidateMatches = new HashMap<>();
+
+        // 매칭 타입에 따라 다른 대기열 사용
+        Map<String, Set<Long>> targetMap = matchType == MatchType.CHAT ?
+                chatInterestToUsersMap : callInterestToUsersMap;
+
+        // 1. 공통 관심사 가진 사용자 찾기
+        for (String interest : interests) {
+            Set<Long> usersWithSameInterest = targetMap.get(interest);
+            if (usersWithSameInterest != null) {
+                for (Long candidateId : usersWithSameInterest) {
+                    if (!candidateId.equals(memberId)) {
+                        // 후보 사용자의 공통 관심사 수 카운트
+                        candidateMatches.merge(candidateId, 1, Integer::sum);
+                    }
                 }
             }
-
         }
 
-        if (bestMatchId != null && maxScore > 0) {
-            // 매칭된 상대를 큐에서 제거하고 채팅방 생성
-            final Long finalBestMatchId = bestMatchId;
-            chatWaitingQueue.values().forEach(queue -> queue.removeIf(user -> user.getUserId().equals(finalBestMatchId)));
+        // 2. 최소 3개 이상 공통 관심사 있는 사용자 선택
+        Optional<Long> matchedUserId = candidateMatches.entrySet().stream()
+                .filter(entry -> entry.getValue() >= 3)
+                .map(Map.Entry::getKey)
+                .findFirst();
 
-            // 룸 생성
-            String roomId = UUID.randomUUID().toString();
-            ChatRoom room = ChatRoom.builder()
-                    .roomId(roomId)
-//                    .participants(List.of(memberId.toString(), bestMatchId.toString()))
-                    .build();
-            chatRoomRepository.save(room);
+        if (matchedUserId.isPresent()) {
+            Long matchedId = matchedUserId.get();
+            Member matchedMember = getMember(matchedId);
 
-            return new ChatMatchResponse(roomId, true);
+            // 3. 채팅방/통화방 생성
+            Long roomId = createRoom(member, matchedMember, matchType);
+
+            // 4. 대기열에서 제거
+            removeFromMatchingPool(memberId);
+            removeFromMatchingPool(matchedId);
+
+            return Optional.of(new MatchResult(roomId, matchedMember));
         }
 
-        // 매칭 실패 시 대기 큐에 추가
-        chatWaitingQueue
-                .computeIfAbsent(member.getInterest().get(0), k -> new PriorityQueue<>())
-                .offer(new WaitingUser(memberId));
-
-        return new ChatMatchResponse(null, false);
-    }
-
-    private int calculateMatchScore(List<String> a, List<String> b) {
-        Set<String> aSet = new HashSet<>(a);
-        Set<String> bSet = new HashSet<>(b);
-        aSet.retainAll(bSet);
-        return aSet.size(); // 겹치는 관심사 수
+        return Optional.empty();
     }
 
 
+//    private void sendMatchingSuccessMessage(Member user1, Member user2,
+//                                            Long roomId, MatchType matchType) {
+//
+//        // user1용 메시지 (user2 정보 포함)
+//        Map<String, Object> payloadForUser1 = Map.of(
+//                "roomId", roomId,
+//                "matchedUserId", user2.getId(),
+//                "matchedNickname", user2.getNickname(),
+//                "myUserId", user1.getId(),  // 추가: 자신의 ID
+//                "myNickname", user1.getNickname(),  // 추가: 자신의 닉네임
+//                "matchType", matchType.toString(),
+//                "timestamp", System.currentTimeMillis()
+//        );
+//
+//        // user2용 메시지 (user1 정보 포함)
+//        Map<String, Object> payloadForUser2 = Map.of(
+//                "roomId", roomId,
+//                "matchedUserId", user1.getId(),  // 반대로 user1 정보 전송
+//                "matchedNickname", user1.getNickname(),
+//                "myUserId", user2.getId(),  // 추가: 자신의 ID
+//                "myNickname", user2.getNickname(),  // 추가: 자신의 닉네임
+//                "matchType", matchType.toString(),
+//                "timestamp", System.currentTimeMillis()
+//        );
+//
+//        // 각 사용자에게 맞는 메시지 전송
+//        messagingTemplate.convertAndSend("/queue/matching/" + user1.getId(), payloadForUser1);
+//        messagingTemplate.convertAndSend("/queue/matching/" + user2.getId(), payloadForUser2);
+//    }
+    private void sendMatchingSuccessMessage(Member user1, Member user2,
+                                            Long roomId, MatchType matchType) {
 
+        // user1용 메시지 (user2 정보 포함)
+        Map<String, Object> payloadForUser1 = Map.of(
+                "roomName", "test",
+                "token","007eJxTYGCZJRuhdzZE0V+96XjAvvTCxvv6DwodJv+xaZJLTjohvlGBwTjFwMjMzNDUMMXY0iTZMtXCwtIsxSgpOdXcPMnAzNRw0ke7jIZARoaHn2axMDJAIIjPwlCSWlzCwAAAujkeiw==",
+                "matchUser", new MemberResponseDTO(user1),
+                "timestamp", System.currentTimeMillis()
+        );
 
+        // user2용 메시지 (user1 정보 포함)
+        Map<String, Object> payloadForUser2 = Map.of(
+                "roomName", "test",
+                "token","007eJxTYGCZJRuhdzZE0V+96XjAvvTCxvv6DwodJv+xaZJLTjohvlGBwTjFwMjMzNDUMMXY0iTZMtXCwtIsxSgpOdXcPMnAzNRw0ke7jIZARoaHn2axMDJAIIjPwlCSWlzCwAAAujkeiw==",
+                "matchUser", new MemberResponseDTO(user2),
+                "timestamp", System.currentTimeMillis()
+        );
 
+        log.info("매칭 알림 전송: {}번 → {}번 (Room {})",
+                user1.getId(), user2.getId(), roomId);
+        log.info("매칭 알림 전송: {}번 → {}번 (Room {})",
+                user2.getId(), user1.getId(), roomId);
 
-
-    public VoiceMatchResponse requestAsTalker(Long userId, String category) {
-        // 1. 해당 카테고리의 Listener 있는지 먼저 탐색
-        Queue<Long> specificListeners = listenerQueues.getOrDefault(category, new ConcurrentLinkedQueue<>());
-        Long matchedListener = specificListeners.poll();
-
-        if (matchedListener == null) {
-            matchedListener = allListenerQueue.poll();
-        }
-
-        if (matchedListener != null) {
-            Session session = sessionService.createSession(userId, matchedListener);
-//            return new VoiceMatchResponse(session.getChannelName(), session.getAgoraToken(), session.getAgoraToken());
-            return null;
-        }
-
-        // 없으면 대기열에 본인 추가
-        talkerQueues.computeIfAbsent(category, k -> new ConcurrentLinkedQueue<>()).offer(userId);
-        return new VoiceMatchResponse(null, null, "WAITING");
+        // 각 사용자에게 맞는 메시지 전송
+        messagingTemplate.convertAndSend("/queue/matching/" + user1.getId(), payloadForUser1);
+        messagingTemplate.convertAndSend("/queue/matching/" + user2.getId(), payloadForUser2);
     }
 
-    public VoiceMatchResponse requestAsListener(Long userId, String category) {
-        // ALL 리스너
-        if ("ALL".equalsIgnoreCase(category)) {
-            // 대기 중인 모든 Talker 탐색
-            for (Map.Entry<String, Queue<Long>> entry : talkerQueues.entrySet()) {
-                Long matchedTalker = entry.getValue().poll();
-                if (matchedTalker != null) {
-                    Session session = sessionService.createSession(matchedTalker, userId);
-//                    return new VoiceMatchResponse(session.getChannelName(), session.getAgoraToken(), session.getAgoraToken());
-                    return null;
+    @Transactional
+    public Long createRoom(Member member1, Member member2, MatchType matchType) {
+        if (matchType == MatchType.CHAT) {
+            return createChatRoom(member1, member2);
+        } else {
+            return createCallRoom(member1, member2);
+        }
+    }
+
+    private Long createChatRoom(Member member1, Member member2) {
+        String roomId = "chat-" + UUID.randomUUID();
+        ChatRoom room = ChatRoom.builder()
+                .roomId(roomId)
+                .build();
+
+        ChatParticipant participant1 = ChatParticipant.builder()
+                .chatRoom(room)
+                .member(member1)
+                .joinedAt(LocalDateTime.now())
+                .build();
+
+        ChatParticipant participant2 = ChatParticipant.builder()
+                .chatRoom(room)
+                .member(member2)
+                .joinedAt(LocalDateTime.now())
+                .build();
+
+        chatRoomRepository.save(room);
+        chatParticipantRepository.saveAll(List.of(participant1, participant2));
+        return room.getId();
+    }
+
+    private Long createCallRoom(Member member1, Member member2) {
+        String roomId = "call-" + UUID.randomUUID();
+
+        CallRoom room = CallRoom.builder()
+                .roomId(roomId)
+                .build();
+
+        CallParticipant participant1 = CallParticipant.builder()
+                .callRoom(room)
+                .member(member1)
+                .build();
+
+        CallParticipant participant2 = CallParticipant.builder()
+                .callRoom(room)
+                .member(member2)
+                .build();
+
+        callRoomRepository.save(room);
+        callParticipantRepository.saveAll(List.of(participant1,participant2));
+        return room.getId();
+    }
+
+    
+    //매칭취소 및 삭제
+    public void removeFromMatchingPool(Long memberId) {
+        Set<String> interests = userToInterestsMap.remove(memberId);
+        MatchType matchType = userMatchTypeMap.remove(memberId);
+
+        if (interests != null && matchType != null) {
+            Map<String, Set<Long>> targetMap = matchType == MatchType.CHAT ?
+                    chatInterestToUsersMap : callInterestToUsersMap;
+
+            for (String interest : interests) {
+                Set<Long> users = targetMap.get(interest);
+                if (users != null) {
+                    users.remove(memberId);
+                    if (users.isEmpty()) {
+                        targetMap.remove(interest);
+                    }
                 }
             }
-
-            // 없으면 ALL 큐에 대기
-            allListenerQueue.offer(userId);
-            return new VoiceMatchResponse(null, null, "WAITING");
         }
-
-        // 카테고리별 Talker 큐 확인
-        Long matchedTalker = talkerQueues.getOrDefault(category, new ConcurrentLinkedQueue<>()).poll();
-        if (matchedTalker != null) {
-            Session session = sessionService.createSession(matchedTalker, userId);
-//            return new VoiceMatchResponse(session.getChannelName(), session.getAgoraToken(), session.getAgoraToken());
-            return null;
-        }
-
-        // 없으면 해당 카테고리 Listener 큐에 대기
-        listenerQueues.computeIfAbsent(category, k -> new ConcurrentLinkedQueue<>()).offer(userId);
-        return new VoiceMatchResponse(null, null, "WAITING");
+        System.out.println("[ "+memberId+" ]매칭취소요청");
+        broadcastMatchingCount(matchType);
     }
 
-    public VoiceMatchResponse processMatchRequest(Long id, MatchRequest request) {
-        return null;
+    private void broadcastMatchingCount(MatchType matchType) {
+        int count = getCount(matchType);
+        String topic = matchType == MatchType.CHAT ?
+                "/topic/chat-matching-count" : "/topic/call-matching-count";
+        messagingTemplate.convertAndSend(topic, count);
     }
+
+    public int getCount(MatchType matchType) {
+        return (int) userMatchTypeMap.values().stream()
+                .filter(type -> type == matchType)
+                .count();
+    }
+    private Member getMember(Long memberId) {
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> new EntityNotFoundException("해당 유저가 없습니다."));
+    }
+
+    private record MatchResult(Long roomId, Member matchedMember) {}
 }

@@ -31,9 +31,6 @@ public class ChatService {
     private final SimpMessagingTemplate messagingTemplate;
 
 
-
-
-
     //채팅방 기록 불러오기
     @Transactional(readOnly = true)
     public List<ChatRoomHistory> getChatRoomHistory(Long memberId) {

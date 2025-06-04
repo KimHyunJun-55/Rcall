@@ -23,5 +23,8 @@ public class Report extends Timestamped {
     @Enumerated(EnumType.STRING)
     private ReportType reportType;
 
+    private String title; // <- Enum name() 또는 label 저장
+
+
     private String details; // 상세 내용
 }

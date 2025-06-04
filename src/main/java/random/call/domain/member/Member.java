@@ -63,11 +63,15 @@ public class Member extends Timestamped {
         this.nickname=nickname;
     }
 
-    public void updateMember(MemberRequest.MemberInfo memberInfo) {
-        this.statusMessage = memberInfo.statusMessage();
-        this.nickname = memberInfo.nickname();
-        this.profileImage =memberInfo.profileImage();
+    public void updateMessage(String message) {
+        this.statusMessage=message;
     }
+
+    public void updateProfileImage(String imageUrl) {
+        this.profileImage=imageUrl;
+    }
+
+
 
     public void updateInterests(MemberRequest.MemberInterests interests) {
         this.interest.clear();

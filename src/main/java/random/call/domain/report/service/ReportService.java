@@ -5,7 +5,11 @@ import org.springframework.stereotype.Service;
 import random.call.domain.report.Report;
 import random.call.domain.report.ReportRepository;
 import random.call.domain.report.dto.ReportRequest;
+import random.call.domain.report.type.CallReportTitleType;
+import random.call.domain.report.type.ChatReportTitleType;
+import random.call.domain.report.type.PostReportTitleType;
 import random.call.domain.report.type.ReportType;
+
 
 @Service
 @RequiredArgsConstructor
@@ -14,16 +18,26 @@ public class ReportService {
     private final ReportRepository reportRepository;
 
     public void createReport(Long reporterId, ReportRequest request) {
-        ReportType type = ReportType.fromId(request.getReportTypeId());
+        String titleLabel = resolveTitleLabel(request.type(), request.titleId());
 
         Report report = Report.builder()
                 .reporterId(reporterId)
-                .targetId(request.getTargetId())
-                .reportType(type)
-                .details(request.getDetails())
+                .targetId(request.targetId())
+                .reportType(request.type())
+                .title(titleLabel)
+                .details(request.description())
                 .build();
 
         reportRepository.save(report);
     }
+
+    private String resolveTitleLabel(ReportType type, int titleId) {
+        return switch (type) {
+            case FEED -> PostReportTitleType.fromId(titleId).getLabel();
+            case CHAT -> ChatReportTitleType.fromId(titleId).getLabel();
+            case CALL -> CallReportTitleType.fromId(titleId).getLabel();
+        };
+    }
 }
+
 

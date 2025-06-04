@@ -17,7 +17,6 @@ import random.call.global.security.userDetails.JwtUserDetails;
 @RequiredArgsConstructor
 public class ReportController {
 
-
     private final ReportService reportService;
 
     @PostMapping("")

@@ -161,16 +161,27 @@ public class MemberService {
     }
 
     @Transactional
-    public void updateNickname(CustomUserDetails userDetails, MemberRequest.CheckNickname checkNickname) {
+    public void updateNickname(CustomUserDetails userDetails, String nickname) {
 
         Member member = userDetails.member();
-        member.updateNickname(checkNickname.nickname());
+        member.updateNickname(nickname);
+    }
+
+    @Transactional
+    public void updateMessage(CustomUserDetails userDetails, String message) {
+
+        Member member = userDetails.member();
+        member.updateMessage(message);
     }
     @Transactional
-    public void updateMember(CustomUserDetails userDetails, MemberRequest.MemberInfo memberInfo) {
+    public void updateProfileImage(CustomUserDetails userDetails, String imageUrl) {
+        System.out.println(imageUrl);
+
         Member member = userDetails.member();
-        member.updateMember(memberInfo);
+        member.updateProfileImage(imageUrl);
     }
+
+
     @Transactional
 
     public void updateInterests(CustomUserDetails userDetails, MemberRequest.MemberInterests interests) {
@@ -196,4 +207,10 @@ public class MemberService {
     }
 
 
+    public MyInterestsResponseDTO getMyInterest(Member member) {
+        List<String> interests = member.getInterest();
+        return MyInterestsResponseDTO.builder()
+                .interests(interests)
+                .build();
+    }
 }

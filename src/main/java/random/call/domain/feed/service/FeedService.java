@@ -7,23 +7,23 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import random.call.domain.feed.Feed;
 import random.call.domain.feed.FeedRepository;
-import random.call.domain.feed.dto.FeedBaseResponse;
 import random.call.domain.feed.dto.FeedRequest;
 import random.call.domain.feed.dto.FeedRequestByMemberIdDTO;
 import random.call.domain.feed.dto.FeedResponse;
+import random.call.domain.feed.dto.FeedSimpleResponseDTO;
 import random.call.domain.like.LikeRepository;
 import random.call.domain.member.Member;
-import random.call.global.security.userDetails.JwtUserDetails;
+import random.call.domain.reply.Reply;
+import random.call.domain.reply.dto.ReplyRepository;
+import random.call.domain.report.ReportRepository;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
+
+import static random.call.domain.report.type.ReportType.FEED;
 
 @Service
 @RequiredArgsConstructor
@@ -31,18 +31,29 @@ public class FeedService {
 
     private final FeedRepository feedRepository;
     private final LikeRepository likeRepository;
+    private final ReplyRepository replyRepository;
+    private final ReportRepository reportRepository;
 
     @Transactional(readOnly = true)
     public Page<FeedResponse> getFeeds(Long memberId, Pageable pageable) {
-        Pageable sortedPageable = getPageable(pageable);
+        Page<Feed> feedPage = feedRepository.findAll(getPageable(pageable));
 
-        Page<Feed> feedPage = feedRepository.findAll(sortedPageable);
+            return feedPage.map(feed -> buildFeedResponse(feed, memberId));
 
-        return feedPage.map(feed -> {
-            boolean isLiked = likeRepository.existsByMemberIdAndFeedIdAndIsLikeTrue(memberId, feed.getId());
-            return new FeedResponse(feed, isLiked);
-        });
-    }
+    };
+
+    @Transactional(readOnly = true)
+    public Page<FeedSimpleResponseDTO> getFeedsSimple(Long memberId, Pageable pageable) {
+        Page<Feed> feedPage = feedRepository.findAll(getPageable(pageable));
+
+        return feedPage.map(
+                feed -> {
+                    boolean isLiked = likeRepository.existsByMemberIdAndFeedIdAndIsLikeTrue(memberId, feed.getId());
+                    return FeedSimpleResponseDTO.from(feed,isLiked);
+                }
+        );
+    };
+
 
     @Transactional(readOnly = true)
     public Page<FeedResponse> getFeedByFeedIdBefore(Long memberId, Long feedId, Pageable pageable) {
@@ -50,11 +61,11 @@ public class FeedService {
         Page<Feed> feedPage = feedRepository.findByIdLessThanOrderByIdDesc(feedId, pageable);
         System.out.println(pageable.getPageSize());
 
-        return feedPage.map(feed -> {
-            boolean isLiked = likeRepository.existsByMemberIdAndFeedIdAndIsLikeTrue(memberId, feed.getId());
-            return new FeedResponse(feed, isLiked);
-        });
+        return feedPage.map(feed -> buildFeedResponse(feed, memberId));
+
     }
+
+
 
     @Transactional(readOnly = true)
     public Page<FeedResponse> getFeedByFeedIdAfter(Long memberId, Long feedId, Pageable pageable) {
@@ -62,10 +73,8 @@ public class FeedService {
         System.out.println(pageable.getPageSize());
         Page<Feed> feedPage = feedRepository.findByIdGreaterThanOrderByIdAsc(feedId, pageable);
 
-        return feedPage.map(feed -> {
-            boolean isLiked = likeRepository.existsByMemberIdAndFeedIdAndIsLikeTrue(memberId, feed.getId());
-            return new FeedResponse(feed, isLiked);
-        });
+        return feedPage.map(feed -> buildFeedResponse(feed, memberId));
+
     }
 
     @Transactional(readOnly = true)
@@ -73,8 +82,7 @@ public class FeedService {
 
         Feed feed = feedRepository.findById(feedId).orElseThrow(()->new EntityNotFoundException("해당 피드를 찾을 수 없습니다."));
 
-            boolean isLiked = likeRepository.existsByMemberIdAndFeedIdAndIsLikeTrue(memberId, feed.getId());
-            return new FeedResponse(feed, isLiked);
+        return buildFeedResponse(feed, memberId);
 
     }
     @Transactional(readOnly = true)
@@ -82,10 +90,8 @@ public class FeedService {
         Pageable sortedPageable = getPageable(pageable);
 
         Page<Feed> feedPage = feedRepository.findAllByMemberId(targetId,sortedPageable);
-        return feedPage.map(feed -> {
-            boolean isLiked = likeRepository.existsByMemberIdAndFeedIdAndIsLikeTrue(targetId, feed.getId());
-            return new FeedResponse(feed, isLiked);
-        });
+        return feedPage.map(feed -> buildFeedResponse(feed, senderId));
+
     }
 
     @Transactional(readOnly = true)
@@ -94,6 +100,14 @@ public class FeedService {
 
         Page<Feed> feedPage = feedRepository.findAllByMemberId(targetId,sortedPageable);
         return feedPage.map(FeedRequestByMemberIdDTO::new);
+    }
+
+    private FeedResponse buildFeedResponse(Feed feed, Long memberId) {
+        boolean isLiked = likeRepository.existsByMemberIdAndFeedIdAndIsLikeTrue(memberId, feed.getId());
+        boolean isReport = reportRepository.existsByReporterIdAndTargetIdAndReportType(memberId, feed.getId(), FEED);
+        Page<Reply> replies = getReplyList(feed);
+
+        return new FeedResponse(feed, isLiked, isReport, replies);
     }
 
     // Feed 조회 (단일 Feed)
@@ -124,35 +138,35 @@ public class FeedService {
     public void createFeed(Member member, FeedRequest request) {
 
         // 기본 이미지 목록
-        List<String> dummyImages = Arrays.asList(
-                "https://www.fitpetmall.com/wp-content/uploads/2023/10/shutterstock_1275055966-1.png",
-                "https://cdn.news.hidoc.co.kr/news/photo/202205/27398_65438_0638.jpg",
-                "https://images.pexels.com/photos/45201/kitty-cat-kitten-pet-45201.jpeg?auto=compress&cs=tinysrgb&w=600",
-                "https://images.pexels.com/photos/416160/pexels-photo-416160.jpeg?auto=compress&cs=tinysrgb&w=600",
-                "https://images.pexels.com/photos/774731/pexels-photo-774731.jpeg?auto=compress&cs=tinysrgb&w=600",
-                "https://images.pexels.com/photos/982865/pexels-photo-982865.jpeg?auto=compress&cs=tinysrgb&w=600",
-                "https://images.pexels.com/photos/2558605/pexels-photo-2558605.jpeg?auto=compress&cs=tinysrgb&w=600",
-
-                //강아지
-                "https://images.pexels.com/photos/31936184/pexels-photo-31936184.jpeg?auto=compress&cs=tinysrgb&w=600",
-                "https://images.pexels.com/photos/31921795/pexels-photo-31921795.jpeg?auto=compress&cs=tinysrgb&w=600",
-                "https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&cs=tinysrgb&w=600",
-                "https://images.pexels.com/photos/1448055/pexels-photo-1448055.jpeg?auto=compress&cs=tinysrgb&w=600",
-                "https://images.pexels.com/photos/2664417/pexels-photo-2664417.jpeg?auto=compress&cs=tinysrgb&w=600",
-                "https://images.pexels.com/photos/26791702/pexels-photo-26791702.jpeg?auto=compress&cs=tinysrgb&w=600"
-        );
+//        List<String> dummyImages = Arrays.asList(
+//                "https://www.fitpetmall.com/wp-content/uploads/2023/10/shutterstock_1275055966-1.png",
+//                "https://cdn.news.hidoc.co.kr/news/photo/202205/27398_65438_0638.jpg",
+//                "https://images.pexels.com/photos/45201/kitty-cat-kitten-pet-45201.jpeg?auto=compress&cs=tinysrgb&w=600",
+//                "https://images.pexels.com/photos/416160/pexels-photo-416160.jpeg?auto=compress&cs=tinysrgb&w=600",
+//                "https://images.pexels.com/photos/774731/pexels-photo-774731.jpeg?auto=compress&cs=tinysrgb&w=600",
+//                "https://images.pexels.com/photos/982865/pexels-photo-982865.jpeg?auto=compress&cs=tinysrgb&w=600",
+//                "https://images.pexels.com/photos/2558605/pexels-photo-2558605.jpeg?auto=compress&cs=tinysrgb&w=600",
+//
+//                //강아지
+//                "https://images.pexels.com/photos/31936184/pexels-photo-31936184.jpeg?auto=compress&cs=tinysrgb&w=600",
+//                "https://images.pexels.com/photos/31921795/pexels-photo-31921795.jpeg?auto=compress&cs=tinysrgb&w=600",
+//                "https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&cs=tinysrgb&w=600",
+//                "https://images.pexels.com/photos/1448055/pexels-photo-1448055.jpeg?auto=compress&cs=tinysrgb&w=600",
+//                "https://images.pexels.com/photos/2664417/pexels-photo-2664417.jpeg?auto=compress&cs=tinysrgb&w=600",
+//                "https://images.pexels.com/photos/26791702/pexels-photo-26791702.jpeg?auto=compress&cs=tinysrgb&w=600"
+//        );
 
         // request에서 이미지 URL이 비어있다면 랜덤으로 선택
         List<String> imageUrls = request.getImageUrls();
-        if (imageUrls == null || imageUrls.isEmpty()) {
-            Random random = new Random();
-            int numImages = random.nextInt(3) + 1; // 1개에서 3개 사이의 숫자
-            imageUrls = new ArrayList<>();
-
-            for (int i = 0; i < numImages; i++) {
-                imageUrls.add(dummyImages.get(random.nextInt(dummyImages.size())));
-            }
-        }
+//        if (imageUrls == null || imageUrls.isEmpty()) {
+//            Random random = new Random();
+//            int numImages = random.nextInt(3) + 1; // 1개에서 3개 사이의 숫자
+//            imageUrls = new ArrayList<>();
+//
+//            for (int i = 0; i < numImages; i++) {
+//                imageUrls.add(dummyImages.get(random.nextInt(dummyImages.size())));
+//            }
+//        }
 
         // Feed 객체 생성
         Feed feed = Feed.builder()
@@ -190,6 +204,20 @@ public class FeedService {
                 pageable.getPageNumber(),
                 pageable.getPageSize(),
                 Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+    }
+
+
+    private boolean needLoadReplies(Feed feed) {
+        return feed.getCommentCount() != null && feed.getCommentCount() > 0;
+    }
+    private Page<Reply> getReplyList(Feed feed) {
+        if (!needLoadReplies(feed)) {
+            return Page.empty(); // ★ Collections.emptyList() 대신 Page.empty() 사용
+        }
+        return replyRepository.findByFeedIdAndIsDeletedFalseOrderByCreatedAtDesc(
+                feed.getId(),
+                PageRequest.of(0, 5)
         );
     }
 

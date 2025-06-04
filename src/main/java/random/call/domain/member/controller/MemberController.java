@@ -33,6 +33,16 @@ public class MemberController {
         return ResponseEntity.ok(memberResponseDTO);
     }
 
+    //토큰소지자의 관심사가져오기
+    @GetMapping("/interests")
+    public ResponseEntity<MyInterestsResponseDTO> getMyInterest(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+        MyInterestsResponseDTO responseDTO = memberService.getMyInterest(customUserDetails.member());
+
+        return ResponseEntity.ok(responseDTO);
+    }
+
+
     //해당유저의 프로필 조회
     @GetMapping("/{memberId}")
     public ResponseEntity<MemberProfileResponseDTO> getProfileById(
@@ -87,14 +97,29 @@ public class MemberController {
     }
 
     //프로필수정
-    @PutMapping("")
-    public ResponseEntity<?> updateMember(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody MemberRequest.MemberInfo memberInfo){
+    @PatchMapping("/nickname")
+    public ResponseEntity<?> updateNickname(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody MemberRequest.CheckNickname nickname){
 
-        memberService.updateMember(userDetails,memberInfo);
+        memberService.updateNickname(userDetails,nickname.nickname());
 
         return ResponseEntity.ok(true);
-
     }
+    @PatchMapping("/message")
+    public ResponseEntity<?> updateMessage(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody MemberRequest.Message message){
+
+        memberService.updateMessage(userDetails,message.message());
+
+        return ResponseEntity.ok(true);
+    }
+
+    @PatchMapping("/profileImage")
+    public ResponseEntity<?> updateProfileImage(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody MemberRequest.ProfileImage imageUrl){
+
+        memberService.updateProfileImage(userDetails,imageUrl.imageUrl());
+
+        return ResponseEntity.ok(true);
+    }
+
     @PutMapping("/interests")
     public ResponseEntity<?> updateInterests(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody MemberRequest.MemberInterests interests){
 

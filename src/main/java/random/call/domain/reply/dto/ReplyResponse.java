@@ -17,7 +17,7 @@ public class ReplyResponse {
 
     public ReplyResponse(Reply reply) {
         this.id = reply.getId();
-        this.writer = new ReplyResponse.WriterDto(reply.getWriter().getId(), reply.getWriter().getNickname(),"https://images.pexels.com/photos/2558605/pexels-photo-2558605.jpeg?auto=compress&cs=tinysrgb&w=600");
+        this.writer = new ReplyResponse.WriterDto(reply.getWriter().getId(), reply.getWriter().getNickname(),reply.getWriter().getProfileImage());
         this.content = reply.getContent();
         this.createdAt = reply.getCreatedAt();
     }

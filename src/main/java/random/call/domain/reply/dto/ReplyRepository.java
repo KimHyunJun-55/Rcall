@@ -12,5 +12,7 @@ public interface ReplyRepository extends JpaRepository<Reply, Long> {
     Page<Reply> findByFeedIdAndIsDeletedFalseOrderByCreatedAtAsc(Long feedId, Pageable pageable);
 
     Page<Reply> findByFeedIdAndIsDeletedFalseOrderByCreatedAtDesc(Long feedId, Pageable pageable);
+
+    List<Reply> findByFeedId(Long id);
 }
 

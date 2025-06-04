@@ -9,10 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import random.call.domain.feed.dto.FeedBaseResponse;
-import random.call.domain.feed.dto.FeedRequest;
-import random.call.domain.feed.dto.FeedRequestByMemberIdDTO;
-import random.call.domain.feed.dto.FeedResponse;
+import random.call.domain.feed.dto.*;
 import random.call.domain.feed.service.FeedService;
 import random.call.global.security.userDetails.CustomUserDetails;
 import org.springframework.data.domain.Pageable;
@@ -26,10 +23,16 @@ public class FeedController {
 
     private final FeedService feedService;
 
-    //전체 피드 조회
+    //피드 조회 (페이징)
     @GetMapping("")
     public ResponseEntity<Page<FeedResponse>> getFeeds(@AuthenticationPrincipal JwtUserDetails jwtUserDetails, Pageable pageable) {
         Page<FeedResponse> response = feedService.getFeeds(jwtUserDetails.id(),pageable);
+        return ResponseEntity.ok(response);
+    }
+    //피드조회(페이징/심플)
+    @GetMapping("/simple")
+    public ResponseEntity<Page<FeedSimpleResponseDTO>> getFeedsSimple(@AuthenticationPrincipal JwtUserDetails jwtUserDetails, Pageable pageable) {
+        Page<FeedSimpleResponseDTO> response = feedService.getFeedsSimple(jwtUserDetails.id(),pageable);
         return ResponseEntity.ok(response);
     }
     @GetMapping("/before/{feedId}")
