@@ -2,7 +2,7 @@ package random.call.domain.report.type;
 
 import lombok.Getter;
 
-public enum ChatReportTitleType {
+public enum ReplyReportTitleType {
     INAPPROPRIATE_LANGUAGE(1, "욕설 또는 혐오 표현"),
     SEXUAL_CONTENT(2, "성적 발언 또는 행동"),
     SCAM(3, "사기나 금전 요구"),
@@ -14,16 +14,17 @@ public enum ChatReportTitleType {
     @Getter
     private final String label;
 
-    ChatReportTitleType(int id, String label) {
+
+    ReplyReportTitleType(int id, String label) {
         this.id = id;
         this.label = label;
     }
-    public static ChatReportTitleType fromId(int id) {
-        for (ChatReportTitleType type : values()) {
+
+    public static ReplyReportTitleType fromId(int id) {
+        for (ReplyReportTitleType type : values()) {
             if (type.id == id) return type;
         }
-        throw new IllegalArgumentException("Invalid chat report title id: " + id);
+        throw new IllegalArgumentException("Invalid reply report title id: " + id);
     }
-
 
 }

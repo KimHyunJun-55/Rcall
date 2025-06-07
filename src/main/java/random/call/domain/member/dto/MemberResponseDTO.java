@@ -20,11 +20,13 @@ public class MemberResponseDTO {
     private String nickname;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDateTime createdAt;
+    private String profileImage;
 
     public MemberResponseDTO(Member member){
         this.id = member.getId();
         this.nickname = member.getNickname();
         this.createdAt=member.getCreatedAt();
+        this.profileImage=member.getProfileImage();
 
     }
 }

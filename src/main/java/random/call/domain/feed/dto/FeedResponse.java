@@ -20,11 +20,10 @@ public class FeedResponse extends FeedBaseResponse {
     private final Integer commentCount;
     private final Integer likeCount;
     private final Location location;
-    private final List<ReplyResponse> replies;
     private final Boolean isLiked;
     private final Boolean isReport;
 
-    public FeedResponse(Feed feed, Boolean isLiked,Boolean isReport, Page<Reply> replies) {
+    public FeedResponse(Feed feed, Boolean isLiked,Boolean isReport) {
         super(feed);
         this.writer = new WriterDto(
                 feed.getWriter().getId(),
@@ -34,9 +33,7 @@ public class FeedResponse extends FeedBaseResponse {
         this.likeCount = feed.getLikeCount() != null ? feed.getLikeCount() : 0;
         this.commentCount = feed.getCommentCount() != null ? feed.getCommentCount() : 0;
         this.location = feed.getLocation();
-        this.replies = replies != null ?
-                replies.stream().map(ReplyResponse::new).toList() :
-                Collections.emptyList(); // null → 빈 리스트
+
         this.isLiked = isLiked != null ? isLiked : false;
         this.isReport = isReport != null ? isReport : false;
     }

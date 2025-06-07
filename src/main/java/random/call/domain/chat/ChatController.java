@@ -10,7 +10,9 @@ import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Controller;
 import random.call.domain.chat.dto.ChatMessageDto;
 import random.call.domain.chat.dto.MarkAsReadRequest;
+import random.call.domain.match.MatchType;
 import random.call.domain.match.service.ChatMatchService;
+import random.call.domain.match.service.MatchService;
 import random.call.global.jwt.JwtUtil;
 
 import java.util.List;
@@ -21,7 +23,7 @@ public class ChatController {
 
     private final JwtUtil jwtUtil;
     private final ChatService chatService;
-    private final ChatMatchService chatMatchService;
+    private final MatchService chatMatchService;
 
     @MessageMapping("/matching/request")
     public void handleMatchingRequest(Message<?> incomingMessage) throws InterruptedException {
@@ -32,7 +34,7 @@ public class ChatController {
 
         // 🕐 매칭 지연 (테스트용)
 //        Thread.sleep(15_000); // 지연
-        chatMatchService.processMatching(userId);
+        chatMatchService.processMatching(userId, MatchType.CHAT);
 
     }
 

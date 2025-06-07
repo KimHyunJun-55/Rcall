@@ -53,6 +53,12 @@ public class FriendRequestController {
         friendRequestService.acceptFriend(requestId, jwtUserDetails.id());
         return ResponseEntity.ok().build();
     }
+    //친구요청 수락
+    @PostMapping("/decline/{requestId}")
+    public ResponseEntity<Void> declineRequest(@AuthenticationPrincipal JwtUserDetails jwtUserDetails, @PathVariable Long requestId) {
+        friendRequestService.declineFriend(requestId, jwtUserDetails.id());
+        return ResponseEntity.ok().build();
+    }
 
     @GetMapping("")
     public ResponseEntity<List<Long>> getFriends(@AuthenticationPrincipal JwtUserDetails jwtUserDetails) {

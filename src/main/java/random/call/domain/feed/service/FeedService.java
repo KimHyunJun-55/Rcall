@@ -107,7 +107,7 @@ public class FeedService {
         boolean isReport = reportRepository.existsByReporterIdAndTargetIdAndReportType(memberId, feed.getId(), FEED);
         Page<Reply> replies = getReplyList(feed);
 
-        return new FeedResponse(feed, isLiked, isReport, replies);
+        return new FeedResponse(feed, isLiked, isReport);
     }
 
     // Feed 조회 (단일 Feed)

@@ -62,6 +62,9 @@ public class Member extends Timestamped {
     public void updateNickname(String nickname) {
         this.nickname=nickname;
     }
+    public void updateMbti(MBTI mbti) {
+        this.mbti=mbti;
+    }
 
     public void updateMessage(String message) {
         this.statusMessage=message;

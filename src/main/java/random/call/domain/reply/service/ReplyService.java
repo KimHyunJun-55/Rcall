@@ -14,6 +14,7 @@ import random.call.domain.reply.Reply;
 import random.call.domain.reply.dto.ReplyRepository;
 import random.call.domain.reply.dto.ReplyRequest;
 import random.call.domain.reply.dto.ReplyResponse;
+import random.call.domain.reply.dto.ReplyUpdateRequest;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,8 +27,8 @@ public class ReplyService {
     private final FeedRepository feedRepository;
 
     @Transactional
-    public ReplyResponse createReply(Member member, Long feedId, ReplyRequest request) {
-        Feed feed = feedRepository.findById(feedId)
+    public ReplyResponse createReply(Member member, ReplyRequest request) {
+        Feed feed = feedRepository.findById(request.getFeedId())
                 .orElseThrow(() -> new EntityNotFoundException("Feed not found"));
 
         Reply reply = Reply.builder()
@@ -44,7 +45,7 @@ public class ReplyService {
     }
 
     @Transactional
-    public void updateReply(Member member, Long replyId, ReplyRequest request) {
+    public ReplyResponse updateReply(Member member, Long replyId, ReplyUpdateRequest request) {
         Reply reply = replyRepository.findById(replyId)
                 .orElseThrow(() -> new EntityNotFoundException("Reply not found"));
 
@@ -52,7 +53,8 @@ public class ReplyService {
             throw new AccessDeniedException("You can only edit your own reply.");
         }
 
-        reply.updateContent(request.getContent());
+        reply.updateContent(request.content());
+        return new ReplyResponse(reply);
     }
 
     @Transactional

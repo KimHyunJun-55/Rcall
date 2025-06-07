@@ -10,6 +10,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import random.call.domain.reply.dto.ReplyRequest;
 import random.call.domain.reply.dto.ReplyResponse;
+import random.call.domain.reply.dto.ReplyUpdateRequest;
 import random.call.domain.reply.service.ReplyService;
 import random.call.global.security.userDetails.CustomUserDetails;
 
@@ -17,46 +18,47 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/feed/{feedId}/replies")
+@RequestMapping("/api/v1/replies") // 계층 구조 제거
 public class ReplyController {
 
     private final ReplyService replyService;
 
-    // 댓글 등록
+    // 댓글 등록 (피드 ID는 요청 본문으로)
     @PostMapping
-    public ResponseEntity<ReplyResponse> createReply(@AuthenticationPrincipal CustomUserDetails userDetails,
-                                               @PathVariable Long feedId,
-                                               @RequestBody ReplyRequest request) {
-        ReplyResponse reply =replyService.createReply(userDetails.member(), feedId, request);
-        return ResponseEntity.ok(reply);
+    public ResponseEntity<ReplyResponse> createReply(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestBody ReplyRequest request) { // feedId 포함
+        return ResponseEntity.ok(
+                replyService.createReply(userDetails.member(), request)
+        );
     }
 
-    // 댓글 목록 조회
-    @GetMapping
-    public ResponseEntity<Page<ReplyResponse>> getReplies(
+    // 피드별 댓글 목록 조회
+    @GetMapping("/by-feed/{feedId}")
+    public ResponseEntity<Page<ReplyResponse>> getRepliesByFeed(
             @PathVariable Long feedId,
-            @PageableDefault(size = 10, sort = "createdAt") Pageable pageable
-    ) {
-        Page<ReplyResponse> responses = replyService.getReplies(feedId,pageable);
-
-        return ResponseEntity.ok(responses);
+            @PageableDefault Pageable pageable) {
+        return ResponseEntity.ok(
+                replyService.getReplies(feedId, pageable)
+        );
     }
-
 
     // 댓글 수정
     @PutMapping("/{replyId}")
-    public ResponseEntity<Boolean> updateReply(@AuthenticationPrincipal CustomUserDetails userDetails,
-                                               @PathVariable Long replyId,
-                                               @RequestBody ReplyRequest request) {
-        replyService.updateReply(userDetails.member(), replyId, request);
-        return ResponseEntity.ok(true);
+    public ResponseEntity<ReplyResponse> updateReply(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long replyId,
+            @RequestBody ReplyUpdateRequest request) {
+        ReplyResponse response =replyService.updateReply(userDetails.member(), replyId, request);
+        return ResponseEntity.ok(response); // 204 No Content
     }
 
     // 댓글 삭제
     @DeleteMapping("/{replyId}")
-    public ResponseEntity<Boolean> deleteReply(@AuthenticationPrincipal CustomUserDetails userDetails,
-                                               @PathVariable Long replyId) {
+    public ResponseEntity<Void> deleteReply(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long replyId) {
         replyService.deleteReply(userDetails.member(), replyId);
-        return ResponseEntity.ok(true);
+        return ResponseEntity.noContent().build();
     }
 }

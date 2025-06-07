@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import random.call.domain.member.QuestionAnswer;
 import random.call.domain.member.type.Gender;
+import random.call.domain.member.type.MBTI;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,6 +25,7 @@ public class MemberProfileResponseDTO {
     private Gender gender;
     private String location;
     private String statusMessage;
+    private MBTI mbti;
     private List<QuestionsDTO> questionAnswers;
 
     private List<String> interests;

@@ -28,6 +28,10 @@ public class FriendRequest extends Timestamped {
     public void pending() {
         this.status = FriendRequestStatus.PENDING;
     }
+    public void rejected() {
+        this.status = FriendRequestStatus.REJECTED;
+    }
+
 
     public void cancel() {
         if (this.status != FriendRequestStatus.PENDING) {

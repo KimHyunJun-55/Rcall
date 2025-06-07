@@ -104,6 +104,13 @@ public class MemberController {
 
         return ResponseEntity.ok(true);
     }
+    @PatchMapping("/mbti")
+    public ResponseEntity<?> updateMbti(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody MemberRequest.Mbti mbti){
+
+        memberService.updateMbti(userDetails,mbti.mbti());
+
+        return ResponseEntity.ok(true);
+    }
     @PatchMapping("/message")
     public ResponseEntity<?> updateMessage(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody MemberRequest.Message message){
 

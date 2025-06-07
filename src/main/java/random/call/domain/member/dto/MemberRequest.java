@@ -1,6 +1,7 @@
 package random.call.domain.member.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import random.call.domain.member.type.MBTI;
 
 import java.util.List;
 
@@ -9,6 +10,12 @@ public class MemberRequest {
     public record CheckNickname(
             @NotBlank
             String nickname
+    ){
+
+    }
+    public record Mbti(
+            @NotBlank
+            MBTI mbti
     ){
 
     }

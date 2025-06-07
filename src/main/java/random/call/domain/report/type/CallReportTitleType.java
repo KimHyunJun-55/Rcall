@@ -23,6 +23,6 @@ public enum CallReportTitleType {
         for (CallReportTitleType type : values()) {
             if (type.id == id) return type;
         }
-        throw new IllegalArgumentException("Invalid post report title id: " + id);
+        throw new IllegalArgumentException("Invalid call report title id: " + id);
     }
 }

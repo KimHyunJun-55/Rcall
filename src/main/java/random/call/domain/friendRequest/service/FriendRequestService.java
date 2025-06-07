@@ -69,7 +69,7 @@ public class FriendRequestService {
 
         friendRequest.cancel();
 
-        friendRequestRepository.save(friendRequest);
+        friendRequestRepository.delete(friendRequest);
     }
 
     
@@ -125,4 +125,15 @@ public class FriendRequestService {
                 .map(Optional::get)
                 .collect(Collectors.toList());
     }
+
+    @Transactional
+    public void declineFriend(Long requestId, Long receiverId) {
+        FriendRequest request = friendRequestRepository.findByReceiverIdAndSendId(requestId,receiverId)
+                .orElseThrow(() -> new EntityNotFoundException("요청이 존재하지 않습니다."));
+        if (!request.getReceiverId().equals(receiverId)) {
+            throw new IllegalAccessError("본인의 요청만 수락할 수 있습니다.");
+        }
+friendRequestRepository.delete(request);
+    }
+
 }

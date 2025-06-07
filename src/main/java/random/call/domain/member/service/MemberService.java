@@ -19,6 +19,7 @@ import random.call.domain.member.repository.MemberRepository;
 import random.call.domain.member.QuestionAnswer;
 import random.call.domain.member.dto.*;
 import random.call.domain.member.repository.QuestionAnswerRepository;
+import random.call.domain.member.type.MBTI;
 import random.call.global.jwt.JwtUtil;
 import random.call.global.security.userDetails.CustomUserDetails;
 
@@ -89,6 +90,7 @@ public class MemberService {
                 .profileImage(profileImage) // 수정된 부분
                 .gender(member.getGender())
                 .location("KOREA") // TODO: 실제 위치 정보로 변경 필요
+                .mbti(member.getMbti())
                 .statusMessage(member.getStatusMessage())
                 .questionAnswers(questionAnswerDTOs)
                 .interests(member.getInterest())
@@ -165,6 +167,13 @@ public class MemberService {
 
         Member member = userDetails.member();
         member.updateNickname(nickname);
+    }
+
+    @Transactional
+    public void updateMbti(CustomUserDetails userDetails, MBTI mbti) {
+
+        Member member = userDetails.member();
+        member.updateMbti(mbti);
     }
 
     @Transactional

@@ -10,5 +10,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReplyRequest {
+    private Long feedId;
     private String content;
 }

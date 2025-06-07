@@ -18,6 +18,7 @@ import random.call.domain.match.MatchType;
 import random.call.domain.member.Member;
 import random.call.domain.member.dto.MemberResponseDTO;
 import random.call.domain.member.repository.MemberRepository;
+import random.call.global.agora.AgoraTokenService;
 
 
 import java.time.LocalDateTime;
@@ -33,6 +34,7 @@ public class MatchService {
     private final ChatParticipantRepository chatParticipantRepository;
     private final CallRoomRepository callRoomRepository;
     private final CallParticipantRepository callParticipantRepository;
+    private final AgoraTokenService agoraTokenService;
 
     // 관심사별 대기열 (채팅/통화 구분)
     private final Map<String, Set<Long>> chatInterestToUsersMap = new ConcurrentHashMap<>();
@@ -114,7 +116,7 @@ public class MatchService {
 
         // 2. 최소 3개 이상 공통 관심사 있는 사용자 선택
         Optional<Long> matchedUserId = candidateMatches.entrySet().stream()
-                .filter(entry -> entry.getValue() >= 3)
+                .filter(entry -> entry.getValue() >= 1)
                 .map(Map.Entry::getKey)
                 .findFirst();
 
@@ -136,63 +138,63 @@ public class MatchService {
     }
 
 
-//    private void sendMatchingSuccessMessage(Member user1, Member user2,
-//                                            Long roomId, MatchType matchType) {
-//
-//        // user1용 메시지 (user2 정보 포함)
-//        Map<String, Object> payloadForUser1 = Map.of(
-//                "roomId", roomId,
-//                "matchedUserId", user2.getId(),
-//                "matchedNickname", user2.getNickname(),
-//                "myUserId", user1.getId(),  // 추가: 자신의 ID
-//                "myNickname", user1.getNickname(),  // 추가: 자신의 닉네임
-//                "matchType", matchType.toString(),
-//                "timestamp", System.currentTimeMillis()
-//        );
-//
-//        // user2용 메시지 (user1 정보 포함)
-//        Map<String, Object> payloadForUser2 = Map.of(
-//                "roomId", roomId,
-//                "matchedUserId", user1.getId(),  // 반대로 user1 정보 전송
-//                "matchedNickname", user1.getNickname(),
-//                "myUserId", user2.getId(),  // 추가: 자신의 ID
-//                "myNickname", user2.getNickname(),  // 추가: 자신의 닉네임
-//                "matchType", matchType.toString(),
-//                "timestamp", System.currentTimeMillis()
-//        );
-//
-//        // 각 사용자에게 맞는 메시지 전송
-//        messagingTemplate.convertAndSend("/queue/matching/" + user1.getId(), payloadForUser1);
-//        messagingTemplate.convertAndSend("/queue/matching/" + user2.getId(), payloadForUser2);
-//    }
     private void sendMatchingSuccessMessage(Member user1, Member user2,
                                             Long roomId, MatchType matchType) {
 
+        String tokenForUser1 = agoraTokenService.generateToken("call"+roomId, user1.getId().intValue());
+        String tokenForUser2 = agoraTokenService.generateToken("call"+roomId, user2.getId().intValue());
+
+        System.out.println("Generated Token for User1 (UID=" + user1.getId() + "): " + tokenForUser1);
+        System.out.println("Generated Token for User2 (UID=" + user2.getId() + "): " + tokenForUser2);
+
         // user1용 메시지 (user2 정보 포함)
         Map<String, Object> payloadForUser1 = Map.of(
-                "roomName", "test",
-                "token","007eJxTYGCZJRuhdzZE0V+96XjAvvTCxvv6DwodJv+xaZJLTjohvlGBwTjFwMjMzNDUMMXY0iTZMtXCwtIsxSgpOdXcPMnAzNRw0ke7jIZARoaHn2axMDJAIIjPwlCSWlzCwAAAujkeiw==",
-                "matchUser", new MemberResponseDTO(user1),
+                "roomName", "call"+roomId,
+                "token",tokenForUser1,
+                "matchUser", new MemberResponseDTO(user2),
                 "timestamp", System.currentTimeMillis()
         );
 
         // user2용 메시지 (user1 정보 포함)
         Map<String, Object> payloadForUser2 = Map.of(
-                "roomName", "test",
-                "token","007eJxTYGCZJRuhdzZE0V+96XjAvvTCxvv6DwodJv+xaZJLTjohvlGBwTjFwMjMzNDUMMXY0iTZMtXCwtIsxSgpOdXcPMnAzNRw0ke7jIZARoaHn2axMDJAIIjPwlCSWlzCwAAAujkeiw==",
-                "matchUser", new MemberResponseDTO(user2),
+                "roomName", "call"+roomId,
+                "token",tokenForUser2,
+                "matchUser", new MemberResponseDTO(user1),
                 "timestamp", System.currentTimeMillis()
         );
-
-        log.info("매칭 알림 전송: {}번 → {}번 (Room {})",
-                user1.getId(), user2.getId(), roomId);
-        log.info("매칭 알림 전송: {}번 → {}번 (Room {})",
-                user2.getId(), user1.getId(), roomId);
 
         // 각 사용자에게 맞는 메시지 전송
         messagingTemplate.convertAndSend("/queue/matching/" + user1.getId(), payloadForUser1);
         messagingTemplate.convertAndSend("/queue/matching/" + user2.getId(), payloadForUser2);
     }
+//    private void sendMatchingSuccessMessage(Member user1, Member user2,
+//                                            Long roomId, MatchType matchType) {
+//
+//        // user1용 메시지 (user2 정보 포함)
+//        Map<String, Object> payloadForUser1 = Map.of(
+//                "roomName", "test",
+//                "token","007eJxTYLi24b9TWWfvi8zt36ovFzjLb/8V31psbdEvuVo1bfta8XYFBuMUAyMzM0NTwxRjS5Nky1QLC0uzFKOk5FRz8yQDM1NDThanjIZARoY16reYGRkgEMRnYShJLS5hYAAAjKEfHA==",
+//                "matchUser", new MemberResponseDTO(user2),
+//                "timestamp", System.currentTimeMillis()
+//        );
+//
+//        // user2용 메시지 (user1 정보 포함)
+//        Map<String, Object> payloadForUser2 = Map.of(
+//                "roomName", "test",
+//                "token","007eJxTYLi24b9TWWfvi8zt36ovFzjLb/8V31psbdEvuVo1bfta8XYFBuMUAyMzM0NTwxRjS5Nky1QLC0uzFKOk5FRz8yQDM1NDThanjIZARoY16reYGRkgEMRnYShJLS5hYAAAjKEfHA==",
+//                "matchUser", new MemberResponseDTO(user1),
+//                "timestamp", System.currentTimeMillis()
+//        );
+//
+//        log.info("매칭 알림 전송: {}번 → {}번 (Room {})",
+//                user1.getId(), user2.getId(), roomId);
+//        log.info("매칭 알림 전송: {}번 → {}번 (Room {})",
+//                user2.getId(), user1.getId(), roomId);
+//
+//        // 각 사용자에게 맞는 메시지 전송
+//        messagingTemplate.convertAndSend("/queue/matching/" + user1.getId(), payloadForUser1);
+//        messagingTemplate.convertAndSend("/queue/matching/" + user2.getId(), payloadForUser2);
+//    }
 
     @Transactional
     public Long createRoom(Member member1, Member member2, MatchType matchType) {
@@ -275,7 +277,7 @@ public class MatchService {
     private void broadcastMatchingCount(MatchType matchType) {
         int count = getCount(matchType);
         String topic = matchType == MatchType.CHAT ?
-                "/topic/chat-matching-count" : "/topic/call-matching-count";
+                "/topic/matching-count-chat" : "/topic/matching-count-call";
         messagingTemplate.convertAndSend(topic, count);
     }
 
@@ -290,4 +292,12 @@ public class MatchService {
     }
 
     private record MatchResult(Long roomId, Member matchedMember) {}
+
+    private int convertUidSafely(Long uid) {
+        if (uid > Integer.MAX_VALUE || uid < Integer.MIN_VALUE) {
+            throw new IllegalArgumentException("UID가 int 범위를 초과합니다.");
+        }
+        return uid.intValue();
+    }
+
 }

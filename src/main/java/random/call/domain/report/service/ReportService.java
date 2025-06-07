@@ -5,10 +5,7 @@ import org.springframework.stereotype.Service;
 import random.call.domain.report.Report;
 import random.call.domain.report.ReportRepository;
 import random.call.domain.report.dto.ReportRequest;
-import random.call.domain.report.type.CallReportTitleType;
-import random.call.domain.report.type.ChatReportTitleType;
-import random.call.domain.report.type.PostReportTitleType;
-import random.call.domain.report.type.ReportType;
+import random.call.domain.report.type.*;
 
 
 @Service
@@ -36,6 +33,7 @@ public class ReportService {
             case FEED -> PostReportTitleType.fromId(titleId).getLabel();
             case CHAT -> ChatReportTitleType.fromId(titleId).getLabel();
             case CALL -> CallReportTitleType.fromId(titleId).getLabel();
+            case REPLY -> ReplyReportTitleType.fromId(titleId).getLabel();
         };
     }
 }
