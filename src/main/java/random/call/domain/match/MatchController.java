@@ -4,24 +4,16 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
-import random.call.domain.match.dto.MatchRequest;
 import random.call.domain.match.dto.MatchingResponse;
-import random.call.domain.match.dto.VoiceMatchResponse;
 import random.call.domain.match.service.MatchService;
 import random.call.domain.member.Member;
-import random.call.domain.member.dto.MemberResponseDTO;
 import random.call.domain.member.repository.MemberRepository;
 import random.call.global.jwt.JwtUtil;
-import random.call.global.security.userDetails.JwtUserDetails;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -77,22 +69,22 @@ public class MatchController {
 //        }
     }
 
-    private void sendMatchResult(WaitingUser receiver, WaitingUser partner,
-                                 String channelName, String agoraToken) {
-        MatchingResponse response = MatchingResponse.builder()
-                .roomId(1L)
-                .agoraToken(agoraToken)
-                .channelName(channelName)
-                .matchedAt(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME))
-                .matchMember(partner.getNickname())
-                .matchMemberId(partner.getUserId())
-                .build();
-
-        messagingTemplate.convertAndSend(
-                "/queue/matching/voice/" + receiver.getUserId(),
-                response
-        );
-    }
+//    private void sendMatchResult(WaitingUser receiver, WaitingUser partner,
+//                                 String channelName, String agoraToken) {
+//        MatchingResponse response = MatchingResponse.builder()
+//                .roomId(1L)
+//                .agoraToken(agoraToken)
+//                .channelName(channelName)
+//                .matchedAt(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME))
+//                .matchMember(partner.getNickname())
+//                .matchMemberId(partner.getUserId())
+//                .build();
+//
+//        messagingTemplate.convertAndSend(
+//                "/queue/matching/voice/" + receiver.getUserId(),
+//                response
+//        );
+//    }
 
     @Getter
     @AllArgsConstructor
@@ -101,32 +93,32 @@ public class MatchController {
         private String nickname;
     }
 
-    private void sendMatchingSuccessMessage(Member user1, Member user2,
-                                            Long roomId, MatchType matchType) {
-
-        // user1용 메시지 (user2 정보 포함)
-        Map<String, Object> payloadForUser1 = Map.of(
-                "roomName", "test",
-                "token","007eJxTYGCZJRuhdzZE0V+96XjAvvTCxvv6DwodJv+xaZJLTjohvlGBwTjFwMjMzNDUMMXY0iTZMtXCwtIsxSgpOdXcPMnAzNRw0ke7jIZARoaHn2axMDJAIIjPwlCSWlzCwAAAujkeiw==",
-                "matchUser", new MemberResponseDTO(user1),
-                "timestamp", System.currentTimeMillis()
-        );
-
-        // user2용 메시지 (user1 정보 포함)
-        Map<String, Object> payloadForUser2 = Map.of(
-                "roomName", "test",
-                "token","007eJxTYGCZJRuhdzZE0V+96XjAvvTCxvv6DwodJv+xaZJLTjohvlGBwTjFwMjMzNDUMMXY0iTZMtXCwtIsxSgpOdXcPMnAzNRw0ke7jIZARoaHn2axMDJAIIjPwlCSWlzCwAAAujkeiw==",
-                "matchUser", new MemberResponseDTO(user2),
-                "timestamp", System.currentTimeMillis()
-        );
-
-        log.info("매칭 알림 전송: {}번 → {}번 (Room {})",
-                user1.getId(), user2.getId(), roomId);
-        log.info("매칭 알림 전송: {}번 → {}번 (Room {})",
-                user2.getId(), user1.getId(), roomId);
-
-        // 각 사용자에게 맞는 메시지 전송
-        messagingTemplate.convertAndSend("/queue/matching/" + user1.getId(), payloadForUser1);
-        messagingTemplate.convertAndSend("/queue/matching/" + user2.getId(), payloadForUser2);
-    }
+//    private void sendMatchingSuccessMessage(Member user1, Member user2,
+//                                            Long roomId, MatchType matchType) {
+//
+//        // user1용 메시지 (user2 정보 포함)
+//        Map<String, Object> payloadForUser1 = Map.of(
+//                "roomName", "test",
+//                "token","007eJxTYGCZJRuhdzZE0V+96XjAvvTCxvv6DwodJv+xaZJLTjohvlGBwTjFwMjMzNDUMMXY0iTZMtXCwtIsxSgpOdXcPMnAzNRw0ke7jIZARoaHn2axMDJAIIjPwlCSWlzCwAAAujkeiw==",
+//                "matchUser", new MemberResponseDTO(user1),
+//                "timestamp", System.currentTimeMillis()
+//        );
+//
+//        // user2용 메시지 (user1 정보 포함)
+//        Map<String, Object> payloadForUser2 = Map.of(
+//                "roomName", "test",
+//                "token","007eJxTYGCZJRuhdzZE0V+96XjAvvTCxvv6DwodJv+xaZJLTjohvlGBwTjFwMjMzNDUMMXY0iTZMtXCwtIsxSgpOdXcPMnAzNRw0ke7jIZARoaHn2axMDJAIIjPwlCSWlzCwAAAujkeiw==",
+//                "matchUser", new MemberResponseDTO(user2),
+//                "timestamp", System.currentTimeMillis()
+//        );
+//
+//        log.info("매칭 알림 전송: {}번 → {}번 (Room {})",
+//                user1.getId(), user2.getId(), roomId);
+//        log.info("매칭 알림 전송: {}번 → {}번 (Room {})",
+//                user2.getId(), user1.getId(), roomId);
+//
+//        // 각 사용자에게 맞는 메시지 전송
+//        messagingTemplate.convertAndSend("/queue/matching/" + user1.getId(), payloadForUser1);
+//        messagingTemplate.convertAndSend("/queue/matching/" + user2.getId(), payloadForUser2);
+//    }
 }

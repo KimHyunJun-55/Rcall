@@ -9,6 +9,7 @@ import random.call.domain.chat.entity.ChatParticipant;
 import random.call.domain.member.dto.MemberRequest;
 import random.call.domain.member.type.Gender;
 import random.call.domain.member.type.MBTI;
+import random.call.domain.member.type.MemberType;
 import random.call.global.timeStamped.Timestamped;
 
 import java.util.ArrayList;
@@ -45,6 +46,12 @@ public class Member extends Timestamped {
 
     @Enumerated(EnumType.STRING)
     private MBTI mbti;
+
+    @Builder.Default
+    private Boolean isSubscriber =false;
+
+    @Enumerated(EnumType.STRING)
+    private MemberType memberType= MemberType.STANDARD;
 
     private String profileImage;
 

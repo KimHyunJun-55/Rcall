@@ -15,6 +15,8 @@ import random.call.domain.member.service.MemberService;
 import random.call.global.security.userDetails.CustomUserDetails;
 import random.call.global.security.userDetails.JwtUserDetails;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/member")
 @RequiredArgsConstructor
@@ -149,6 +151,8 @@ public class MemberController {
         log.info("Token is valid");
         return new ResponseEntity<>("Token is valid", HttpStatus.OK);
     }
+
+
 
 
 

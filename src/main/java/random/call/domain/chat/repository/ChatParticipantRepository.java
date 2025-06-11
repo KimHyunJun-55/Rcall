@@ -17,7 +17,7 @@ public interface ChatParticipantRepository extends JpaRepository<ChatParticipant
     Optional<ChatParticipant> findByChatRoomIdAndMemberIdNot(Long roomId, Long memberId);
 
     @Query("""
-    SELECT cp1.chatRoom.id, m.id, m.nickname
+    SELECT cp1.chatRoom.id, m.id, m.nickname, m.profileImage
     FROM ChatParticipant cp1
     JOIN ChatParticipant cp2 ON cp1.chatRoom.id = cp2.chatRoom.id
     JOIN Member m ON cp2.member.id = m.id

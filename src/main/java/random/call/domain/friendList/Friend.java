@@ -26,8 +26,14 @@ public class Friend extends Timestamped {
     @Builder.Default
     private FriendStatus status = FriendStatus.ACTIVE; // 친구 상태 (활성, 차단, 삭제 등)
 
-    @CreationTimestamp
-    private LocalDateTime createdAt; // 친구 관계 생성 시간
+    private LocalDateTime blockedAt; // 친구 관계 생성 시간
 
+    @Column(nullable = true)
+    private Long blockedBy;
+
+    public void blockUpdate(){
+        this.status=FriendStatus.BLOCKED;
+        this.blockedAt = LocalDateTime.now();
+    }
 
 }

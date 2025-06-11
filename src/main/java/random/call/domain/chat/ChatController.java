@@ -23,7 +23,7 @@ public class ChatController {
 
     private final JwtUtil jwtUtil;
     private final ChatService chatService;
-    private final MatchService chatMatchService;
+    private final MatchService matchService;
 
     @MessageMapping("/matching/request")
     public void handleMatchingRequest(Message<?> incomingMessage) throws InterruptedException {
@@ -34,7 +34,7 @@ public class ChatController {
 
         // 🕐 매칭 지연 (테스트용)
 //        Thread.sleep(15_000); // 지연
-        chatMatchService.processMatching(userId, MatchType.CHAT);
+        matchService.processMatching(userId, MatchType.CHAT);
 
     }
 

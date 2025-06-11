@@ -15,6 +15,7 @@ import random.call.domain.feed.dto.FeedRequest;
 import random.call.domain.feed.dto.FeedRequestByMemberIdDTO;
 import random.call.domain.feed.dto.FeedResponse;
 import random.call.domain.feed.dto.FeedSimpleResponseDTO;
+import random.call.domain.friendList.FriendRepository;
 import random.call.domain.like.LikeRepository;
 import random.call.domain.member.Member;
 import random.call.domain.reply.Reply;
@@ -33,18 +34,24 @@ public class FeedService {
     private final LikeRepository likeRepository;
     private final ReplyRepository replyRepository;
     private final ReportRepository reportRepository;
+    private final FriendRepository friendRepository;
 
     @Transactional(readOnly = true)
     public Page<FeedResponse> getFeeds(Long memberId, Pageable pageable) {
-        Page<Feed> feedPage = feedRepository.findAll(getPageable(pageable));
+        // 1. 현재 사용자가 차단한 멤버 ID 목록 조회
+        List<Long> blockedMemberIds = friendRepository.findBlockedMembersByMemberId(memberId);
 
-            return feedPage.map(feed -> buildFeedResponse(feed, memberId));
+        // 2. 차단된 사용자의 피드를 제외하고 조회
+        Page<Feed> feedPage = feedRepository.findAllExcludingBlockedMembers(blockedMemberIds, pageable);
 
-    };
+        return feedPage.map(feed -> buildFeedResponse(feed, memberId));
+    }
 
     @Transactional(readOnly = true)
     public Page<FeedSimpleResponseDTO> getFeedsSimple(Long memberId, Pageable pageable) {
-        Page<Feed> feedPage = feedRepository.findAll(getPageable(pageable));
+        List<Long> blockedMemberIds = friendRepository.findBlockedMembersByMemberId(memberId);
+
+        Page<Feed> feedPage = feedRepository.findAllExcludingBlockedMembers(blockedMemberIds, pageable);
 
         return feedPage.map(
                 feed -> {
@@ -57,24 +64,32 @@ public class FeedService {
 
     @Transactional(readOnly = true)
     public Page<FeedResponse> getFeedByFeedIdBefore(Long memberId, Long feedId, Pageable pageable) {
-        // 최신순(내림차순)으로 정렬된 Feed 중 기준 ID보다 작은 것들
-        Page<Feed> feedPage = feedRepository.findByIdLessThanOrderByIdDesc(feedId, pageable);
-        System.out.println(pageable.getPageSize());
+        // 1. 차단된 사용자 목록 조회
+        List<Long> blockedMemberIds = friendRepository.findBlockedMembersByMemberId(memberId);
+
+        // 2. 차단된 사용자 제외 + feedId보다 작은 피드 조회 (최신순)
+        Page<Feed> feedPage = feedRepository.findByIdLessThanAndMemberNotInOrderByIdDesc(
+                feedId,
+                blockedMemberIds,
+                pageable
+        );
 
         return feedPage.map(feed -> buildFeedResponse(feed, memberId));
-
     }
-
-
 
     @Transactional(readOnly = true)
     public Page<FeedResponse> getFeedByFeedIdAfter(Long memberId, Long feedId, Pageable pageable) {
-        // 오래된순(오름차순)으로 정렬된 Feed 중 기준 ID보다 큰 것들
-        System.out.println(pageable.getPageSize());
-        Page<Feed> feedPage = feedRepository.findByIdGreaterThanOrderByIdAsc(feedId, pageable);
+        // 1. 차단된 사용자 목록 조회
+        List<Long> blockedMemberIds = friendRepository.findBlockedMembersByMemberId(memberId);
+
+        // 2. 차단된 사용자 제외 + feedId보다 큰 피드 조회 (오래된순)
+        Page<Feed> feedPage = feedRepository.findByIdGreaterThanAndMemberNotInOrderByIdAsc(
+                feedId,
+                blockedMemberIds,
+                pageable
+        );
 
         return feedPage.map(feed -> buildFeedResponse(feed, memberId));
-
     }
 
     @Transactional(readOnly = true)
@@ -110,64 +125,12 @@ public class FeedService {
         return new FeedResponse(feed, isLiked, isReport);
     }
 
-    // Feed 조회 (단일 Feed)
-//    @Transactional(readOnly = true)
-//    public FeedResponse getFeed(@AuthenticationPrincipal JwtUserDetails jwtUserDetails, Long feedId) {
-//        Feed feed = feedRepository.findById(feedId)
-//                .orElseThrow(() -> new EntityNotFoundException("Feed not found"));
-//        return new FeedResponse(jwtUserDetails.id(),feed);
-//    }
-
-    // Feed 작성
-//    @Transactional
-//    public void createFeed(Member member, FeedRequest request) {
-//
-//        Feed feed = Feed.builder()
-//                .writer(member)
-//                .content(request.getContent())
-//                .imageUrls(request.getImageUrls()) // 이미지 URL 목록도 추가
-//                .build(); // 빌더 패턴을 통해 Feed 객체 생성
-//
-//        feedRepository.save(feed); // 저장
-//    }
-
-
 
     //임시로
     @Transactional
     public void createFeed(Member member, FeedRequest request) {
 
-        // 기본 이미지 목록
-//        List<String> dummyImages = Arrays.asList(
-//                "https://www.fitpetmall.com/wp-content/uploads/2023/10/shutterstock_1275055966-1.png",
-//                "https://cdn.news.hidoc.co.kr/news/photo/202205/27398_65438_0638.jpg",
-//                "https://images.pexels.com/photos/45201/kitty-cat-kitten-pet-45201.jpeg?auto=compress&cs=tinysrgb&w=600",
-//                "https://images.pexels.com/photos/416160/pexels-photo-416160.jpeg?auto=compress&cs=tinysrgb&w=600",
-//                "https://images.pexels.com/photos/774731/pexels-photo-774731.jpeg?auto=compress&cs=tinysrgb&w=600",
-//                "https://images.pexels.com/photos/982865/pexels-photo-982865.jpeg?auto=compress&cs=tinysrgb&w=600",
-//                "https://images.pexels.com/photos/2558605/pexels-photo-2558605.jpeg?auto=compress&cs=tinysrgb&w=600",
-//
-//                //강아지
-//                "https://images.pexels.com/photos/31936184/pexels-photo-31936184.jpeg?auto=compress&cs=tinysrgb&w=600",
-//                "https://images.pexels.com/photos/31921795/pexels-photo-31921795.jpeg?auto=compress&cs=tinysrgb&w=600",
-//                "https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&cs=tinysrgb&w=600",
-//                "https://images.pexels.com/photos/1448055/pexels-photo-1448055.jpeg?auto=compress&cs=tinysrgb&w=600",
-//                "https://images.pexels.com/photos/2664417/pexels-photo-2664417.jpeg?auto=compress&cs=tinysrgb&w=600",
-//                "https://images.pexels.com/photos/26791702/pexels-photo-26791702.jpeg?auto=compress&cs=tinysrgb&w=600"
-//        );
-
-        // request에서 이미지 URL이 비어있다면 랜덤으로 선택
         List<String> imageUrls = request.getImageUrls();
-//        if (imageUrls == null || imageUrls.isEmpty()) {
-//            Random random = new Random();
-//            int numImages = random.nextInt(3) + 1; // 1개에서 3개 사이의 숫자
-//            imageUrls = new ArrayList<>();
-//
-//            for (int i = 0; i < numImages; i++) {
-//                imageUrls.add(dummyImages.get(random.nextInt(dummyImages.size())));
-//            }
-//        }
-
         // Feed 객체 생성
         Feed feed = Feed.builder()
                 .writer(member)
@@ -176,10 +139,10 @@ public class FeedService {
                 .location(request.getLocation())
                 .visibility(request.getVisibility())
                 .category(request.getCategory())
-                .imageUrls(imageUrls) // 랜덤으로 선택된 이미지 URL 목록 추가
+                .imageUrls(imageUrls)
                 .build();
 
-        feedRepository.save(feed); // 저장
+        feedRepository.save(feed);
     }
 
 

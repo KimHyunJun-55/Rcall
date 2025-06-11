@@ -2,6 +2,7 @@ package random.call.domain.report;
 
 import jakarta.persistence.*;
 import lombok.*;
+import random.call.domain.report.type.ReportStatus;
 import random.call.domain.report.type.ReportType;
 import random.call.global.timeStamped.Timestamped;
 
@@ -23,7 +24,12 @@ public class Report extends Timestamped {
     @Enumerated(EnumType.STRING)
     private ReportType reportType;
 
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private ReportStatus status = ReportStatus.PENDING;
+
     private String title; // <- Enum name() 또는 label 저장
+    private String result;
 
 
     private String details; // 상세 내용

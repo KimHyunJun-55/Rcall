@@ -13,6 +13,7 @@ public class MemberRequest {
     ){
 
     }
+
     public record Mbti(
             @NotBlank
             MBTI mbti

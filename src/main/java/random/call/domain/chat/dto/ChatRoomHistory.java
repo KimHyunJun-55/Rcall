@@ -12,6 +12,7 @@ public class ChatRoomHistory {
     private Long RoomId;
     private Long memberId;
     private String memberNickname;
+    private String profileImage;
     private String lastMessage;
     private String lastTime;
 

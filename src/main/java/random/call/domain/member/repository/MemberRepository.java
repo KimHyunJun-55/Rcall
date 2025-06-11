@@ -1,6 +1,8 @@
 package random.call.domain.member.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import random.call.domain.member.Member;
 
 import java.util.List;
@@ -19,4 +21,6 @@ public interface MemberRepository extends JpaRepository<Member,Long> {
     Optional<Member> findByUsername(String username);
 
     List<String> findInterestsById(Long userId);
-}
+
+    @Query("SELECT m FROM Member m WHERE m.id IN :ids")
+    List<Member> findMembersByIdIn(@Param("ids") List<Long> ids);}

@@ -216,10 +216,13 @@ public class MemberService {
     }
 
 
+    @Transactional(readOnly = true)
     public MyInterestsResponseDTO getMyInterest(Member member) {
         List<String> interests = member.getInterest();
         return MyInterestsResponseDTO.builder()
                 .interests(interests)
                 .build();
     }
+
+
 }

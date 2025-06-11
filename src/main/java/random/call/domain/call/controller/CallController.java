@@ -1,4 +1,4 @@
-package random.call.domain.call;
+package random.call.domain.call.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import random.call.domain.match.MatchType;
 import random.call.domain.match.service.MatchService;
 import random.call.global.security.userDetails.JwtUserDetails;
 
@@ -24,6 +25,15 @@ public class CallController {
     public ResponseEntity<Void> cancelMatching(@AuthenticationPrincipal JwtUserDetails jwtUserDetails) {
         matchService.removeFromMatchingPool(jwtUserDetails.id());
         return ResponseEntity.ok().build();
+    }
+    @GetMapping("/count")
+    public ResponseEntity<Integer> matchCount(){
+        return ResponseEntity.ok(matchService.getCount(MatchType.CALL));
+    }
+
+    @GetMapping("/total")
+    public ResponseEntity<Integer> getTotalCount(){
+        return ResponseEntity.ok(148);
     }
 
 

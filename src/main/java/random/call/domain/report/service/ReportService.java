@@ -2,10 +2,14 @@ package random.call.domain.report.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import random.call.domain.report.Report;
 import random.call.domain.report.ReportRepository;
 import random.call.domain.report.dto.ReportRequest;
+import random.call.domain.report.dto.ReportResponseDTO;
 import random.call.domain.report.type.*;
+
+import java.util.List;
 
 
 @Service
@@ -14,6 +18,7 @@ public class ReportService {
 
     private final ReportRepository reportRepository;
 
+    @Transactional
     public void createReport(Long reporterId, ReportRequest request) {
         String titleLabel = resolveTitleLabel(request.type(), request.titleId());
 
@@ -35,6 +40,11 @@ public class ReportService {
             case CALL -> CallReportTitleType.fromId(titleId).getLabel();
             case REPLY -> ReplyReportTitleType.fromId(titleId).getLabel();
         };
+    }
+
+    public List<ReportResponseDTO> getReports(Long id) {
+        List<Report> reports = reportRepository.findByReporterId(id);
+        return reports.stream().map(ReportResponseDTO::new).toList();
     }
 }
 

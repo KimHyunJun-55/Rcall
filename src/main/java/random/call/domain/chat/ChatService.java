@@ -57,6 +57,7 @@ public class ChatService {
                     Long roomId = (Long) r[0];
                     Long matchMemberId = (Long)r[1];
                     String nickname = (String) r[2];
+                    String profileImage = (String) r[3];
                     ChatMessage latestMessage = latestMessages.stream()
                             .filter(m -> m.getRoomId().equals(roomId))
                             .findFirst()
@@ -66,6 +67,7 @@ public class ChatService {
                             .RoomId(roomId)
                             .memberId(matchMemberId)
                             .memberNickname(nickname)
+                            .profileImage(profileImage)
                             .lastMessage(latestMessage != null ? latestMessage.getContent() : "")
                             .lastTime(latestMessage != null ?
                                     latestMessage.getCreatedAt().format(formatter) : "")

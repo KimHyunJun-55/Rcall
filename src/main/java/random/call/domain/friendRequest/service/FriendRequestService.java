@@ -133,7 +133,7 @@ public class FriendRequestService {
         if (!request.getReceiverId().equals(receiverId)) {
             throw new IllegalAccessError("본인의 요청만 수락할 수 있습니다.");
         }
-friendRequestRepository.delete(request);
+        friendRequestRepository.delete(request);
     }
 
 }

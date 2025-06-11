@@ -26,6 +26,7 @@ public class FeedController {
     //피드 조회 (페이징)
     @GetMapping("")
     public ResponseEntity<Page<FeedResponse>> getFeeds(@AuthenticationPrincipal JwtUserDetails jwtUserDetails, Pageable pageable) {
+
         Page<FeedResponse> response = feedService.getFeeds(jwtUserDetails.id(),pageable);
         return ResponseEntity.ok(response);
     }

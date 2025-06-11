@@ -14,7 +14,9 @@ import random.call.domain.chat.dto.ChatRoomHistory;
 import random.call.domain.chat.entity.ChatRoom;
 import random.call.domain.chat.repository.ChatMessageRepository;
 import random.call.domain.chat.repository.ChatRoomRepository;
+import random.call.domain.match.MatchType;
 import random.call.domain.match.service.ChatMatchService;
+import random.call.domain.match.service.MatchService;
 import random.call.global.security.userDetails.JwtUserDetails;
 
 import java.time.LocalDateTime;
@@ -31,11 +33,11 @@ public class ChatApiController {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final ChatService chatService;
-    private final ChatMatchService chatMatchService;
+    private final MatchService matchService;
 
     @GetMapping("/count")
     public ResponseEntity<Integer> matchCount(){
-        return ResponseEntity.ok(chatMatchService.getCount());
+        return ResponseEntity.ok(matchService.getCount(MatchType.CHAT));
     }
 
 
@@ -82,7 +84,7 @@ public class ChatApiController {
 
     @PostMapping("/cancel")
     public ResponseEntity<Void> cancelMatching(@AuthenticationPrincipal JwtUserDetails jwtUserDetails) {
-        chatMatchService.removeFromMatchingPool(jwtUserDetails.id());
+        matchService.removeFromMatchingPool(jwtUserDetails.id());
         return ResponseEntity.ok().build();
     }
 

@@ -15,6 +15,8 @@ import java.util.List;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // 기본 생성자는 외부에서 호출할 수 없도록 제한
+@Table(indexes = @Index(name = "idx_feed_created_at", columnList = "createdAt"))
+
 @Builder
 public class Feed extends Timestamped {
 
