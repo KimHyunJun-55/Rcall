@@ -3,14 +3,19 @@ package random.call.domain.like;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import random.call.domain.feed.Feed;
 import random.call.domain.feed.FeedRepository;
 import random.call.domain.like.dto.LikeToggleResponse;
+import random.call.domain.member.Member;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class LikeService {
 
     private final LikeRepository likeRepository;
@@ -46,5 +51,11 @@ public class LikeService {
                 .likeCount(feed.getLikeCount())
                 .isLiked(like.getIsLike())
                 .build();
+    }
+
+    public void deleteLikes(Member member){
+        List<Likes> likes = likeRepository.findByMemberId(member.getId());
+        likeRepository.deleteAll(likes);
+        log.info("{} 회원의 좋아요 삭제 프로세스 완료",member.getId());
     }
 }

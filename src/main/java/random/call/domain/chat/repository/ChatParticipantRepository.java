@@ -1,10 +1,13 @@
 package random.call.domain.chat.repository;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import random.call.domain.chat.entity.ChatParticipant;
 import random.call.domain.chat.entity.ChatRoom;
+import random.call.domain.member.Member;
 
 import java.util.List;
 import java.util.Map;
@@ -17,13 +20,15 @@ public interface ChatParticipantRepository extends JpaRepository<ChatParticipant
     Optional<ChatParticipant> findByChatRoomIdAndMemberIdNot(Long roomId, Long memberId);
 
     @Query("""
-    SELECT cp1.chatRoom.id, m.id, m.nickname, m.profileImage
-    FROM ChatParticipant cp1
-    JOIN ChatParticipant cp2 ON cp1.chatRoom.id = cp2.chatRoom.id
-    JOIN Member m ON cp2.member.id = m.id
-    WHERE cp1.member.id = :memberId AND cp2.member.id != :memberId
-""")
-    List<Object[]> findRoomIdsAndMatchedNicknames(@Param("memberId") Long memberId);
+        SELECT cp1.chatRoom.id, m.id, m.nickname, m.profileImage
+        FROM ChatParticipant cp1
+        JOIN ChatParticipant cp2 ON cp1.chatRoom.id = cp2.chatRoom.id
+        JOIN Member m ON cp2.member.id = m.id
+        WHERE cp1.member.id = :memberId
+        AND cp2.member.id != :memberId
+         AND cp1.isActive = true
+    """)
+    List<Object[]> findActiveRoomsWithMatchedNicknames(@Param("memberId") Long memberId);
 
 
     @Query("SELECT cp FROM ChatParticipant cp " +
@@ -54,6 +59,16 @@ public interface ChatParticipantRepository extends JpaRepository<ChatParticipant
     }
 
 
+    List<ChatParticipant> findByMember(Member member);
 
 
+    void deleteByChatRoomIn(List<ChatRoom> chatRooms);
+
+//    Optional<ChatParticipant> findByChatRoomIdAndMemberId(Long roomId, Long memberId);
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT cp FROM ChatParticipant cp WHERE cp.chatRoom.id = :chatRoomId AND cp.member.id = :memberId")
+    Optional<ChatParticipant> findByChatRoomIdAndMemberIdWithLock(
+            @Param("chatRoomId") Long chatRoomId,
+            @Param("memberId") Long memberId
+    );
 }

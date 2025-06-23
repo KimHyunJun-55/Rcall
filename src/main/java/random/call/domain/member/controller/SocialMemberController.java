@@ -22,10 +22,10 @@ public class SocialMemberController {
 
     private final SocialMemberService socialMemberService;
 
-    @PostMapping("/kakao/sign-in")
-    public ResponseEntity<?> socialMemberSignIn(@RequestBody SocialMemberRequest.KakaoId kakaoId, HttpServletRequest request, HttpServletResponse response){
+    @PostMapping("/sign-in")
+    public ResponseEntity<?> socialMemberSignIn(@RequestBody SocialMemberRequest.SocialInfo socialInfo, HttpServletRequest request, HttpServletResponse response){
 
-        return ResponseEntity.ok(socialMemberService.socialLogin(kakaoId.kakaoId(), SocialType.KAKAO,request,response));
+        return ResponseEntity.ok(socialMemberService.socialLogin(socialInfo.socialId(), socialInfo.socialType(),request,response));
     }
 
     @PostMapping("/kakao/sign-up")

@@ -1,8 +1,9 @@
-package random.call.domain.friendList;
+package random.call.domain.friendList.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import random.call.domain.friendList.Friend;
 import random.call.domain.friendList.dto.BlockMemberResponseDTO;
 import random.call.domain.friendList.type.FriendStatus;
 
@@ -41,5 +42,5 @@ public interface FriendRepository extends JpaRepository<Friend,Long> {
             "AND f.blockedBy = :memberId")
     List<BlockMemberResponseDTO> findBlockedUsers(@Param("memberId") Long memberId);
 
-
+    List<Friend> findByMemberAOrMemberB(Long memberId,Long id);
 }

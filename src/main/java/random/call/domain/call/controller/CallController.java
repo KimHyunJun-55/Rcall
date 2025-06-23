@@ -11,6 +11,8 @@ import random.call.domain.match.MatchType;
 import random.call.domain.match.service.MatchService;
 import random.call.global.security.userDetails.JwtUserDetails;
 
+import java.util.Map;
+
 
 @RestController
 @RequestMapping("/api/v1/call")
@@ -22,13 +24,19 @@ public class CallController {
 
 
     @PostMapping("/cancel")
-    public ResponseEntity<Void> cancelMatching(@AuthenticationPrincipal JwtUserDetails jwtUserDetails) {
+    public ResponseEntity<Boolean> cancelMatching(@AuthenticationPrincipal JwtUserDetails jwtUserDetails) {
         matchService.removeFromMatchingPool(jwtUserDetails.id());
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(true);
     }
+
     @GetMapping("/count")
     public ResponseEntity<Integer> matchCount(){
         return ResponseEntity.ok(matchService.getCount(MatchType.CALL));
+    }
+
+    @GetMapping("/category-counts")
+    public ResponseEntity<Map<String, Integer>> getCategoryCounts() {
+        return ResponseEntity.ok(matchService.getAllCategoryCounts());
     }
 
     @GetMapping("/total")

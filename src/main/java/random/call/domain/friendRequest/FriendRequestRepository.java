@@ -33,4 +33,6 @@ public interface FriendRequestRepository extends JpaRepository<FriendRequest, Lo
 
     @Query("SELECT fr FROM FriendRequest fr WHERE fr.receiverId = :receiverId AND fr.senderId =:senderId ")
     Optional<FriendRequest> findByReceiverIdAndSendId(@Param("senderId") Long senderId,@Param("receiverId")Long receiverId);
+
+    List<FriendRequest> findBySenderIdOrReceiverId(Long id, Long id1);
 }

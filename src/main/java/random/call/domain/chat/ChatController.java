@@ -9,8 +9,10 @@ import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Controller;
 import random.call.domain.chat.dto.ChatMessageDto;
+import random.call.domain.chat.dto.ExitRequest;
 import random.call.domain.chat.dto.MarkAsReadRequest;
 import random.call.domain.match.MatchType;
+import random.call.domain.match.dto.MatchRequest;
 import random.call.domain.match.service.ChatMatchService;
 import random.call.domain.match.service.MatchService;
 import random.call.global.jwt.JwtUtil;
@@ -26,15 +28,10 @@ public class ChatController {
     private final MatchService matchService;
 
     @MessageMapping("/matching/request")
-    public void handleMatchingRequest(Message<?> incomingMessage) throws InterruptedException {
-        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(incomingMessage);
-
-        String token = jwtUtil.extractToken(accessor);
-        var userId = jwtUtil.getMemberIdToToken(token);
-
+    public void handleMatchingRequest(@Payload MatchRequest dto, SimpMessageHeaderAccessor headerAccessor) throws InterruptedException {
         // 🕐 매칭 지연 (테스트용)
 //        Thread.sleep(15_000); // 지연
-        matchService.processMatching(userId, MatchType.CHAT);
+        matchService.processMatching(dto,MatchType.CHAT);
 
     }
 
@@ -45,6 +42,24 @@ public class ChatController {
         String nickname = jwtUtil.getNicknameToToken(token);
 
         chatService.extracted(dto, userId, nickname);
+    }
+
+//    @MessageMapping("/chat.exitRoom")
+//    public void exitRoom(@Payload ExitRequest roomId, SimpMessageHeaderAccessor headerAccessor) {
+//        String token = extractTokenFromHeader(headerAccessor);
+//        Long userId = jwtUtil.getMemberIdToToken(token);
+//        System.out.println(userId);
+//
+//        chatService.exitChatRoom(roomId.getRoomId(), userId);
+//    }
+
+    @MessageMapping("/chat.exitRoom")
+    public void exitRoom(@Payload ExitRequest roomId, SimpMessageHeaderAccessor headerAccessor) {
+//        String token = extractTokenFromHeader(headerAccessor);
+//        Long userId = jwtUtil.getMemberIdToToken(token);
+        System.out.println(roomId.getRoomId());
+
+        chatService.exitChatRoom(roomId.getRoomId(), 4L);
     }
 
 

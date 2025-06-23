@@ -1,8 +1,7 @@
-package random.call.domain.report;
+package random.call.domain.report.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import random.call.domain.report.Report;
 import random.call.domain.report.type.ReportType;
 
 import java.util.List;

@@ -74,6 +74,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 if (StompCommand.CONNECT.equals(accessor.getCommand())) {
                     // JWT 토큰 검증
                     String token = extractToken(accessor);
+                    System.out.println(token);
                     if (token == null || !jwtUtil.validateToken(token)) {
                         throw new MessagingException("인증 실패");
                     }

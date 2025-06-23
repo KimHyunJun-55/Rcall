@@ -38,6 +38,7 @@ public class CustomSecurityConfig {
             "/api/v1/member/check-nickname",
             "/api/v1/member/check-username",
             "/api/v1/social/**",
+            "/api/v1/sms/**"
     };
 
 

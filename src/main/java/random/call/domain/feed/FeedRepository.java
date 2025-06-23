@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import random.call.domain.member.Member;
 
 import java.util.List;
 
@@ -39,4 +40,6 @@ public interface FeedRepository extends JpaRepository<Feed,Long> {
             @Param("blockedMemberIds") List<Long> blockedMemberIds,
             Pageable pageable
     );
+
+    List<Feed> findByWriter(Member member);
 }

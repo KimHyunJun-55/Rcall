@@ -1,13 +1,12 @@
-package random.call.domain.friendList;
+package random.call.domain.friendList.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.cglib.core.Block;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import random.call.domain.friendList.dto.FriendResponseDTO;
+import random.call.domain.friendList.service.FriendService;
 import random.call.domain.friendList.dto.BlockMemberResponseDTO;
-import random.call.domain.member.dto.FriendProfileResponseDTO;
-import random.call.domain.member.dto.MemberResponseDTO;
 import random.call.global.security.userDetails.JwtUserDetails;
 
 import java.util.List;

@@ -1,14 +1,16 @@
-package random.call.domain.friendList;
+package random.call.domain.friendList.service;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import random.call.domain.friendList.Friend;
 import random.call.domain.friendList.dto.BlockMemberResponseDTO;
+import random.call.domain.friendList.dto.FriendResponseDTO;
+import random.call.domain.friendList.repository.FriendRepository;
 import random.call.domain.friendList.type.FriendStatus;
 import random.call.domain.member.Member;
-import random.call.domain.member.dto.MemberResponseDTO;
 import random.call.domain.member.repository.MemberRepository;
 
 import java.util.List;
@@ -88,6 +90,14 @@ public class FriendService {
         friendRepository.delete(friend);
         log.info("차단해제");
 
+
+
+    }
+
+    public void deleteFriendList(Member member){
+        List<Friend> friends = friendRepository.findByMemberAOrMemberB(member.getId(),member.getId());
+        friendRepository.deleteAll(friends);
+        log.info("{} 회원의 친구목록 삭제 프로세스 완료",member.getId());
 
 
     }

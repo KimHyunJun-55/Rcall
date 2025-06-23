@@ -1,4 +1,4 @@
-package random.call.domain.report;
+package random.call.domain.report.controller;
 
 
 import lombok.RequiredArgsConstructor;

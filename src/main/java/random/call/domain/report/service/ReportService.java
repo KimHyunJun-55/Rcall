@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import random.call.domain.report.Report;
-import random.call.domain.report.ReportRepository;
+import random.call.domain.report.repository.ReportRepository;
 import random.call.domain.report.dto.ReportRequest;
 import random.call.domain.report.dto.ReportResponseDTO;
 import random.call.domain.report.type.*;

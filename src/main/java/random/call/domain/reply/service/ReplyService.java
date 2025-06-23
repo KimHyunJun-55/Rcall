@@ -2,6 +2,7 @@ package random.call.domain.reply.service;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ReplyService {
 
     private final ReplyRepository replyRepository;
@@ -76,6 +78,14 @@ public class ReplyService {
     public Page<ReplyResponse> getReplies(Long feedId, Pageable pageable) {
         Page<Reply> page = replyRepository.findByFeedIdAndIsDeletedFalseOrderByCreatedAtDesc(feedId, pageable);
         return page.map(ReplyResponse::new); // 핵심
+    }
+
+    public void deleteAllReply(Member member){
+        List<Reply> replies = replyRepository.findByWriter(member);
+        replyRepository.deleteAll(replies);
+        log.info("{} 회원의 댓글 삭제 프로세스 완료",member.getId());
+
+
     }
 
 }

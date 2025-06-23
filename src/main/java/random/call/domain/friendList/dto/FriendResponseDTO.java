@@ -1,4 +1,4 @@
-package random.call.domain.friendList;
+package random.call.domain.friendList.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

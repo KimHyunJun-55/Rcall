@@ -3,6 +3,7 @@ package random.call.domain.feed.service;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -15,12 +16,12 @@ import random.call.domain.feed.dto.FeedRequest;
 import random.call.domain.feed.dto.FeedRequestByMemberIdDTO;
 import random.call.domain.feed.dto.FeedResponse;
 import random.call.domain.feed.dto.FeedSimpleResponseDTO;
-import random.call.domain.friendList.FriendRepository;
+import random.call.domain.friendList.repository.FriendRepository;
 import random.call.domain.like.LikeRepository;
 import random.call.domain.member.Member;
 import random.call.domain.reply.Reply;
 import random.call.domain.reply.dto.ReplyRepository;
-import random.call.domain.report.ReportRepository;
+import random.call.domain.report.repository.ReportRepository;
 
 import java.util.*;
 
@@ -28,6 +29,7 @@ import static random.call.domain.report.type.ReportType.FEED;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class FeedService {
 
     private final FeedRepository feedRepository;
@@ -176,12 +178,21 @@ public class FeedService {
     }
     private Page<Reply> getReplyList(Feed feed) {
         if (!needLoadReplies(feed)) {
-            return Page.empty(); // ★ Collections.emptyList() 대신 Page.empty() 사용
+            return Page.empty();
         }
         return replyRepository.findByFeedIdAndIsDeletedFalseOrderByCreatedAtDesc(
                 feed.getId(),
                 PageRequest.of(0, 5)
         );
+    }
+
+
+    public void deleteAllFeed(Member member){
+        List<Feed> feeds =feedRepository.findByWriter(member);
+        feedRepository.deleteAll(feeds);
+        log.info("{} 회원의 피드 삭제 프로세스 완료",member.getId());
+
+
     }
 
 

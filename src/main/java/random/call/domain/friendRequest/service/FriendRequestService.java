@@ -2,9 +2,10 @@ package random.call.domain.friendRequest.service;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import random.call.domain.friendList.FriendService;
+import random.call.domain.friendList.service.FriendService;
 import random.call.domain.friendRequest.FriendRequest;
 import random.call.domain.friendRequest.FriendRequestRepository;
 import random.call.domain.friendRequest.type.FriendRequestStatus;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class FriendRequestService {
 
     private final FriendRequestRepository friendRequestRepository;
@@ -134,6 +136,12 @@ public class FriendRequestService {
             throw new IllegalAccessError("본인의 요청만 수락할 수 있습니다.");
         }
         friendRequestRepository.delete(request);
+    }
+
+    public void deleteFriendRequest(Member member){
+        List<FriendRequest> friendRequests = friendRequestRepository.findBySenderIdOrReceiverId(member.getId(),member.getId());
+        friendRequestRepository.deleteAll(friendRequests);
+        log.info("{} 회원의 친구신청목록 삭제 프로세스 완료",member.getId());
     }
 
 }

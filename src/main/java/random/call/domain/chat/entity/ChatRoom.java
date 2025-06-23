@@ -18,5 +18,8 @@ public class ChatRoom {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String roomId;
+    @Setter
+    @Builder.Default
+    private boolean isActive = true; // 채팅방 활성 상태
 
 }

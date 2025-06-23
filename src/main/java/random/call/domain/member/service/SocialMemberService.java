@@ -22,11 +22,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import random.call.domain.member.Member;
+import random.call.domain.member.RequiredConsent;
 import random.call.domain.member.SocialMember;
 import random.call.domain.member.dto.social.SocialLoginResponse;
 import random.call.domain.member.dto.social.SocialMemberInfoDTO;
 import random.call.domain.member.dto.social.SocialMemberRequest;
 import random.call.domain.member.repository.MemberRepository;
+import random.call.domain.member.repository.RequiredConsentRepository;
 import random.call.domain.member.repository.SocialMemberRepository;
 import random.call.domain.member.type.Gender;
 import random.call.domain.member.type.MemberType;
@@ -45,15 +47,16 @@ public class SocialMemberService {
     private final MemberRepository memberRepository;
     private final SocialMemberRepository socialMemberRepository;
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
+    private final RequiredConsentRepository requiredConsentRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public SocialLoginResponse socialLogin(String socialId,SocialType socialType, HttpServletRequest request, HttpServletResponse response) {
-        Optional<SocialMember> socialMember= socialMemberRepository.findBySocialId(socialType.toString()+socialId.toString());
+        Optional<SocialMember> socialMember= socialMemberRepository.findBySocialId(socialType.toString()+"_"+socialId);
 
         if (socialMember.isEmpty()) {
-            return new SocialLoginResponse(false, null, null,null,null); // 아직 회원가입 안된 경우
+            return new SocialLoginResponse(false, null, null,null,null,null,null); // 아직 회원가입 안된 경우
         }else{
             return memberRepository.findById(socialMember.get().getMemberId())
                     .map(member -> signIn(member, request, response))
@@ -82,7 +85,10 @@ public class SocialMemberService {
                 .password(passwordEncoder.encode(UUID.randomUUID().toString()))
                 .mbti(signUpRequest.mbti())
                 .profileImage(signUpRequest.profileImage())
-                .gender(Gender.MALE)
+                .gender(signUpRequest.gender())
+                .phoneNumber(signUpRequest.phoneNumber())
+                .birthDate(signUpRequest.birthDate())
+                .age(Member.calculateAge(signUpRequest.birthDate()))
                 .interest(signUpRequest.interests())
                 .memberType(MemberType.SOCIAL)
                 .build();
@@ -97,6 +103,15 @@ public class SocialMemberService {
                 .build();
         socialMemberRepository.save(socialMember);
 
+        RequiredConsent requiredConsent = RequiredConsent
+                .builder()
+                .memberId(member.getId())
+                .termsOfService(true)
+                .privacyPolicy(true)
+                .build();
+
+        requiredConsentRepository.save(requiredConsent);
+
         return getSocialLoginResponse(member, request, response);
 
     }
@@ -106,7 +121,7 @@ public class SocialMemberService {
 
         jwtUtil.createTokenAndSaved(authentication, response, request);
 
-        return new SocialLoginResponse(true, member.getId(), member.getNickname(), member.getCreatedAt(), member.getIsSubscriber());
+        return new SocialLoginResponse(true, member.getId(), member.getNickname(), member.getCreatedAt(), member.getAge(),member.getGender(),member.getIsSubscriber());
     }
 
     private Authentication forceLogin(Member member) {

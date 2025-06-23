@@ -43,8 +43,8 @@ public class ChatApiController {
 
     @GetMapping("/{roomId}")
     public ResponseEntity<List<ChatHistory>> getChatRoomMessagesHistory(@PathVariable("roomId") Long roomId){
-        log.info("{} : 채팅방 내역조회========================",roomId);
-        ChatRoom chatRoom =chatRoomRepository.findById(roomId).orElseThrow(()->new EntityNotFoundException("not found chatRoom"));
+//        log.info("{} : 채팅방 내역조회========================",roomId);
+//        ChatRoom chatRoom =chatRoomRepository.findById(roomId).orElseThrow(()->new EntityNotFoundException("not found chatRoom"));
 
         List<ChatMessage> messages =chatMessageRepository.findByRoomIdOrderByCreatedAtAsc(roomId);
         List<ChatHistory> messageDtos =messages.stream()
@@ -52,6 +52,13 @@ public class ChatApiController {
                 .toList();
 
         return ResponseEntity.ok(messageDtos);
+
+    }
+
+    @GetMapping("/status/{roomId}")
+    public ResponseEntity<Boolean> getChatRoomStatus(@PathVariable("roomId") Long roomId){
+        ChatRoom chatRoom =chatRoomRepository.findById(roomId).orElseThrow(()->new EntityNotFoundException("not found chatRoom"));
+        return ResponseEntity.ok(chatRoom.isActive());
 
     }
 

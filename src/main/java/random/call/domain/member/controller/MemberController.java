@@ -3,7 +3,6 @@ package random.call.domain.member.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -11,11 +10,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import random.call.domain.member.dto.*;
+import random.call.domain.member.service.MemberDeletionService;
 import random.call.domain.member.service.MemberService;
 import random.call.global.security.userDetails.CustomUserDetails;
 import random.call.global.security.userDetails.JwtUserDetails;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/member")
@@ -24,6 +22,7 @@ import java.util.List;
 public class MemberController {
 
     private final MemberService memberService;
+    private final MemberDeletionService memberDeletionService;
 
     //멤버단일조회
     @GetMapping("")
@@ -64,12 +63,9 @@ public class MemberController {
     //회원가입
     @PostMapping("/sign-up")
     public ResponseEntity<MemberResponseDTO> signUp(@RequestBody SignUpRequestDTO signUpRequestDTO){
-
         MemberResponseDTO memberResponseDTO = memberService.signUp(signUpRequestDTO);
-
         log.info("회원가입");
         return ResponseEntity.ok(memberResponseDTO);
-
     }
 
     //로그인
@@ -98,6 +94,24 @@ public class MemberController {
 
     }
 
+    @PostMapping("/find-username")
+    public ResponseEntity<MemberResponse.Username> findUsername(@RequestBody MemberRequest.PhoneNumber number){
+        MemberResponse.Username username = memberService.findUsername(number.phoneNumber());
+        return ResponseEntity.ok(username);
+
+    }
+    @PostMapping("/reset-password")
+    public ResponseEntity<Boolean> resetPassword(@RequestBody MemberRequest.ResetPassword reset){
+        memberService.resetPassword(reset);
+        return ResponseEntity.ok(true);
+
+    }
+    @PostMapping("/verify-userinfo")
+    public ResponseEntity<Boolean> verifyUserinfo(@RequestBody MemberRequest.VerifyUserInfo verify){
+        return  ResponseEntity.ok(memberService.verifyUserinfo(verify));
+
+    }
+
     //프로필수정
     @PatchMapping("/nickname")
     public ResponseEntity<?> updateNickname(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody MemberRequest.CheckNickname nickname){
@@ -106,6 +120,7 @@ public class MemberController {
 
         return ResponseEntity.ok(true);
     }
+    //mbti변경
     @PatchMapping("/mbti")
     public ResponseEntity<?> updateMbti(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody MemberRequest.Mbti mbti){
 
@@ -113,6 +128,7 @@ public class MemberController {
 
         return ResponseEntity.ok(true);
     }
+    //상태메시지 변경
     @PatchMapping("/message")
     public ResponseEntity<?> updateMessage(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody MemberRequest.Message message){
 
@@ -121,6 +137,7 @@ public class MemberController {
         return ResponseEntity.ok(true);
     }
 
+    //프로필 이미지 변경
     @PatchMapping("/profileImage")
     public ResponseEntity<?> updateProfileImage(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody MemberRequest.ProfileImage imageUrl){
 
@@ -129,6 +146,7 @@ public class MemberController {
         return ResponseEntity.ok(true);
     }
 
+    //관심사 변경
     @PutMapping("/interests")
     public ResponseEntity<?> updateInterests(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody MemberRequest.MemberInterests interests){
 
@@ -137,6 +155,7 @@ public class MemberController {
         return ResponseEntity.ok(true);
 
     }
+    //질문답 변경
     @PutMapping("/questions")
     public ResponseEntity<?> updateQuestions(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody MemberRequest.QuestionAnswerRequests questionAnswerRequests){
 
@@ -152,6 +171,11 @@ public class MemberController {
         return new ResponseEntity<>("Token is valid", HttpStatus.OK);
     }
 
+    @DeleteMapping()
+    public ResponseEntity<Boolean> withdrawnMember(@AuthenticationPrincipal CustomUserDetails userDetails){
+        memberDeletionService.withdrawnMember(userDetails.member());
+        return ResponseEntity.ok(true);
+    }
 
 
 

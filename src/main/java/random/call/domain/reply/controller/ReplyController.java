@@ -1,4 +1,4 @@
-package random.call.domain.reply;
+package random.call.domain.reply.controller;
 
 
 import lombok.RequiredArgsConstructor;
@@ -13,8 +13,6 @@ import random.call.domain.reply.dto.ReplyResponse;
 import random.call.domain.reply.dto.ReplyUpdateRequest;
 import random.call.domain.reply.service.ReplyService;
 import random.call.global.security.userDetails.CustomUserDetails;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor

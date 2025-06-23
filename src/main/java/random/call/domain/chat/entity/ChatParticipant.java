@@ -33,4 +33,16 @@ public class ChatParticipant {
     @Setter
     private Long lastReadMessageId;
 
+    @Setter
+    @Builder.Default
+    private boolean isActive = true; // 개별 참여자 활성 상태
+
+    @Setter
+    private LocalDateTime exitedAt; // 나간 시간
+
+
+    public void exitRoom() {
+        this.isActive=false;
+        this.exitedAt=LocalDateTime.now();
+    }
 }

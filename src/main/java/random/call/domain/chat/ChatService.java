@@ -3,18 +3,27 @@ package random.call.domain.chat;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import random.call.domain.chat.dto.ChatExitEvent;
 import random.call.domain.chat.dto.ChatMessageDto;
 import random.call.domain.chat.dto.ChatRoomHistory;
 import random.call.domain.chat.entity.ChatMessage;
 import random.call.domain.chat.entity.ChatParticipant;
+import random.call.domain.chat.entity.ChatRoom;
 import random.call.domain.chat.repository.ChatMessageRepository;
 import random.call.domain.chat.repository.ChatParticipantRepository;
 import random.call.domain.chat.repository.ChatRoomRepository;
+import random.call.domain.member.Member;
+import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +31,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ChatService {
 
 
@@ -35,7 +45,7 @@ public class ChatService {
     @Transactional(readOnly = true)
     public List<ChatRoomHistory> getChatRoomHistory(Long memberId) {
         // 1. 사용자가 속한 채팅방 ID와 상대방 닉네임 조회
-        List<Object[]> participantResults = chatParticipantRepository.findRoomIdsAndMatchedNicknames(memberId);
+        List<Object[]> participantResults = chatParticipantRepository.findActiveRoomsWithMatchedNicknames(memberId);
 
         // 2. 채팅방 ID 리스트 추출
         List<Long> roomIds = participantResults.stream()
@@ -95,10 +105,12 @@ public class ChatService {
                 .content(saved.getContent())
                 .roomId(saved.getRoomId())
                 .createdAt(saved.getCreatedAt().format(DateTimeFormatter.ISO_DATE_TIME))
-                .tempId(dto.getTempId()) // 클라이언트의 임시 ID 전달
+                .tempId(dto.getTempId())
                 .build();
 
+
         messagingTemplate.convertAndSend("/topic/chat/room/" + dto.getRoomId(), response);
+        messagingTemplate.convertAndSend("/topic/chat/user/"+dto.getTargetId() , response);
     }
 
     @Transactional
@@ -137,5 +149,71 @@ public class ChatService {
     }
 
 
+    public void deleteAllChat(Member member) {
+        List<ChatParticipant> chatParticipants = chatParticipantRepository.findByMember(member);
 
+        List<ChatRoom> chatRooms = chatParticipants.stream()
+                .map(ChatParticipant::getChatRoom)
+                .distinct()
+                .toList();
+
+        List<Long> roomIds = chatRooms.stream()
+                .map(ChatRoom::getId)
+                .toList();
+
+        chatMessageRepository.deleteByRoomIdIn(roomIds);
+        log.info("{} 회원의 채팅메시지 삭제 프로세스 완료",member.getId());
+
+
+        chatParticipantRepository.deleteByChatRoomIn(chatRooms);
+        log.info("{} 회원의 채팅참여자 삭제 프로세스 완료",member.getId());
+
+        chatRoomRepository.deleteAll(chatRooms);
+        log.info("{} 회원의 채팅방 삭제 프로세스 완료",member.getId());
+    }
+
+
+    @Transactional
+    public void exitChatRoom(Long roomId, Long memberId) {
+        // 1. 참여자 상태 업데이트
+        ChatParticipant participant = chatParticipantRepository
+                .findByChatRoomIdAndMemberIdWithLock(roomId, memberId)
+                .orElseThrow(() -> new EntityNotFoundException("참여자 없음"));
+
+        participant.exitRoom();
+
+        // 2. 시스템 메시지 저장
+//        ChatMessage exitMessage = createSystemMessage(roomId);
+//        chatMessageRepository.save(exitMessage);
+
+        ChatRoom room = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new EntityNotFoundException("채팅방 없음"));
+        room.setActive(false);
+
+        // 3. 트랜잭션 커밋 후 메시지 전송
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                messagingTemplate.convertAndSend(
+                        "/topic/chat/events/" + roomId,
+                        new ChatExitEvent(
+                                "ROOM_STATE",
+                                false,
+                                memberId,
+                                LocalDateTime.now()
+                        )
+                );
+            }
+        });
+    }
+
+
+
+    private ChatMessage createSystemMessage(Long roomId) {
+        return ChatMessage.builder()
+                .roomId(roomId)
+                .senderId(null)
+                .content("[시스템] 상대방이 퇴장하셨습니다")
+                .build();
+    }
 }

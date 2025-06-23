@@ -31,4 +31,6 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 """)
     List<ChatMessage> findLatestMessagesByRoomIds(@Param("roomIds") List<Long> roomIds);
 
+
+    void deleteByRoomIdIn(List<Long> roomIds);
 }

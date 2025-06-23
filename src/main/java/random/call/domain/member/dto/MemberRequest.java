@@ -20,6 +20,12 @@ public class MemberRequest {
     ){
 
     }
+    public record PhoneNumber(
+            @NotBlank
+            String phoneNumber
+    ){
+
+    }
     public record Message(
             @NotBlank
             String message
@@ -39,10 +45,14 @@ public class MemberRequest {
 
     }
 
-    public record MemberInfo(
-            String nickname,
-            String statusMessage,
-            String profileImage
+    public record ResetPassword(
+            String username,
+            String password
+    ) {}
+
+    public record VerifyUserInfo(
+            String phoneNumber,
+            String username
     ) {}
 
     public record MemberInterests(
